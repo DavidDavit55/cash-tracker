@@ -1,0 +1,106 @@
+- generic [ref=e36]:
+  - banner [ref=e37]:
+    - generic [ref=e38]: 💵 מעקב מזומן
+    - button "התנתק" [ref=e39] [cursor=pointer]:
+      - img [ref=e40]
+  - main [ref=e43]:
+    - generic [ref=e78]:
+      - generic [ref=e79]:
+        - heading "הוצאות" [level=2] [ref=e80]
+        - button "+ הוסף" [active] [ref=e81] [cursor=pointer]
+      - generic [ref=e82]:
+        - generic [ref=e83]:
+          - img [ref=e84]
+          - textbox "חיפוש..." [ref=e87]
+        - combobox [ref=e88]:
+          - option "ינואר"
+          - option "פברואר"
+          - option "מרץ"
+          - option "אפריל"
+          - option "מאי"
+          - option "יוני" [selected]
+          - option "יולי"
+          - option "אוגוסט"
+          - option "ספטמבר"
+          - option "אוקטובר"
+          - option "נובמבר"
+          - option "דצמבר"
+        - combobox [ref=e89]:
+          - option "2024"
+          - option "2025"
+          - option "2026" [selected]
+        - combobox [ref=e90]:
+          - option "כל הקטגוריות" [selected]
+          - option "🎮 בידור ופנאי"
+          - option "💊 בריאות ורפואה"
+          - option "📚 חינוך"
+          - option "🛒 מזון וסופר"
+          - option "🍽️ מסעדות ובתי קפה"
+          - option "👕 קניות ובגדים"
+          - option "📦 שונות"
+          - option "🚗 תחבורה"
+      - generic [ref=e91]:
+        - generic [ref=e92]: 🧾
+        - paragraph [ref=e93]: אין הוצאות לתקופה זו
+        - button "הוסף הוצאה ראשונה" [ref=e94] [cursor=pointer]
+      - generic [ref=e96]:
+        - generic [ref=e97]:
+          - heading "הוצאה חדשה" [level=3] [ref=e98]
+          - button [ref=e99] [cursor=pointer]:
+            - img [ref=e100]
+        - generic [ref=e104]:
+          - button "צלם קבלה" [ref=e105] [cursor=pointer]:
+            - img [ref=e106]
+            - generic [ref=e109]: צלם קבלה
+          - button "העלה תמונה" [ref=e110] [cursor=pointer]:
+            - img [ref=e111]
+            - generic [ref=e114]: העלה תמונה
+        - generic [ref=e115]:
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - generic [ref=e118]: סכום (₪) *
+              - spinbutton [ref=e119]
+            - generic [ref=e120]:
+              - generic [ref=e121]: תאריך
+              - textbox [ref=e122]: 2026-06-02
+          - generic [ref=e123]:
+            - generic [ref=e124]: שם העסק
+            - textbox "סופרמרקט, מסעדה..." [ref=e125]
+          - generic [ref=e126]:
+            - generic [ref=e127]: תיאור
+            - textbox "מה קנית?" [ref=e128]
+          - generic [ref=e129]:
+            - generic [ref=e130]: קטגוריה
+            - combobox [ref=e131]:
+              - option "בחר קטגוריה" [selected]
+              - option "🎮 בידור ופנאי"
+              - option "💊 בריאות ורפואה"
+              - option "📚 חינוך"
+              - option "🛒 מזון וסופר"
+              - option "🍽️ מסעדות ובתי קפה"
+              - option "👕 קניות ובגדים"
+              - option "📦 שונות"
+              - option "🚗 תחבורה"
+          - generic [ref=e132]:
+            - generic [ref=e133]: הערות
+            - textbox "הערות נוספות..." [ref=e134]
+          - generic [ref=e135]:
+            - button "ביטול" [ref=e136] [cursor=pointer]
+            - button "שמור" [ref=e137] [cursor=pointer]
+  - navigation [ref=e54]:
+    - link "סיכום" [ref=e55] [cursor=pointer]:
+      - /url: /
+      - img [ref=e56]
+      - generic [ref=e61]: סיכום
+    - link "הוצאות" [ref=e62] [cursor=pointer]:
+      - /url: /expenses
+      - img [ref=e63]
+      - generic [ref=e66]: הוצאות
+    - link "תקציב" [ref=e67] [cursor=pointer]:
+      - /url: /budgets
+      - img [ref=e68]
+      - generic [ref=e72]: תקציב
+    - link "קטגוריות" [ref=e73] [cursor=pointer]:
+      - /url: /categories
+      - img [ref=e74]
+      - generic [ref=e77]: קטגוריות

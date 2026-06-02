@@ -1,0 +1,62 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]: 💵 מעקב מזומן
+    - button "התנתק" [ref=e6] [cursor=pointer]:
+      - img [ref=e7]
+  - main [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - heading "הוצאות" [level=2] [ref=e13]
+        - button "+ הוסף" [ref=e14] [cursor=pointer]
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - img [ref=e17]
+          - textbox "חיפוש..." [ref=e20]
+        - combobox [ref=e21]:
+          - option "ינואר"
+          - option "פברואר"
+          - option "מרץ"
+          - option "אפריל"
+          - option "מאי"
+          - option "יוני" [selected]
+          - option "יולי"
+          - option "אוגוסט"
+          - option "ספטמבר"
+          - option "אוקטובר"
+          - option "נובמבר"
+          - option "דצמבר"
+        - combobox [ref=e22]:
+          - option "2024"
+          - option "2025"
+          - option "2026" [selected]
+        - combobox [ref=e23]:
+          - option "כל הקטגוריות" [selected]
+          - option "🎮 בידור ופנאי"
+          - option "💊 בריאות ורפואה"
+          - option "📚 חינוך"
+          - option "🛒 מזון וסופר"
+          - option "🍽️ מסעדות ובתי קפה"
+          - option "👕 קניות ובגדים"
+          - option "📦 שונות"
+          - option "🚗 תחבורה"
+      - generic [ref=e24]:
+        - generic [ref=e25]: 🧾
+        - paragraph [ref=e26]: אין הוצאות לתקופה זו
+        - button "הוסף הוצאה ראשונה" [ref=e27] [cursor=pointer]
+  - navigation [ref=e28]:
+    - link "סיכום" [ref=e29] [cursor=pointer]:
+      - /url: /
+      - img [ref=e30]
+      - generic [ref=e35]: סיכום
+    - link "הוצאות" [ref=e36] [cursor=pointer]:
+      - /url: /expenses
+      - img [ref=e37]
+      - generic [ref=e40]: הוצאות
+    - link "תקציב" [ref=e41] [cursor=pointer]:
+      - /url: /budgets
+      - img [ref=e42]
+      - generic [ref=e46]: תקציב
+    - link "קטגוריות" [ref=e47] [cursor=pointer]:
+      - /url: /categories
+      - img [ref=e48]
+      - generic [ref=e51]: קטגוריות

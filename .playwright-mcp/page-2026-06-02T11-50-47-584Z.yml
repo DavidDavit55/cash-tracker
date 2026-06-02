@@ -1,0 +1,48 @@
+- generic [ref=e36]:
+  - banner [ref=e37]:
+    - generic [ref=e38]: 💵 מעקב מזומן
+    - button "התנתק" [ref=e39] [cursor=pointer]:
+      - img [ref=e40]
+  - main [ref=e43]:
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - heading "שלום, דוד טסט 👋" [level=2] [ref=e46]
+        - generic [ref=e47]:
+          - combobox [ref=e48]:
+            - option "ינואר"
+            - option "פברואר"
+            - option "מרץ"
+            - option "אפריל"
+            - option "מאי"
+            - option "יוני" [selected]
+            - option "יולי"
+            - option "אוגוסט"
+            - option "ספטמבר"
+            - option "אוקטובר"
+            - option "נובמבר"
+            - option "דצמבר"
+          - combobox [ref=e49]:
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+      - generic [ref=e50]:
+        - generic [ref=e51]: ₪0.00
+        - generic [ref=e52]: סה"כ הוצאות — יוני 2026
+        - generic [ref=e53]: 0 עסקאות
+  - navigation [ref=e54]:
+    - link "סיכום" [ref=e55] [cursor=pointer]:
+      - /url: /
+      - img [ref=e56]
+      - generic [ref=e61]: סיכום
+    - link "הוצאות" [ref=e62] [cursor=pointer]:
+      - /url: /expenses
+      - img [ref=e63]
+      - generic [ref=e66]: הוצאות
+    - link "תקציב" [ref=e67] [cursor=pointer]:
+      - /url: /budgets
+      - img [ref=e68]
+      - generic [ref=e72]: תקציב
+    - link "קטגוריות" [ref=e73] [cursor=pointer]:
+      - /url: /categories
+      - img [ref=e74]
+      - generic [ref=e77]: קטגוריות

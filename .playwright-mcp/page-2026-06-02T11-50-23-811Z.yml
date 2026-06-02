@@ -1,0 +1,19 @@
+- generic [ref=e19]:
+  - generic [ref=e20]: 💵
+  - heading "מעקב מזומן" [level=1] [ref=e21]
+  - paragraph [ref=e22]: צור חשבון חדש
+  - generic [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]: שם מלא
+      - textbox "ישראל ישראלי" [ref=e26]
+    - generic [ref=e27]:
+      - generic [ref=e28]: אימייל
+      - textbox "your@email.com" [ref=e29]
+    - generic [ref=e30]:
+      - generic [ref=e31]: סיסמה
+      - textbox "לפחות 6 תווים" [ref=e32]
+    - button "הרשמה" [ref=e33] [cursor=pointer]
+  - paragraph [ref=e34]:
+    - text: יש לך חשבון?
+    - link "התחבר" [ref=e35] [cursor=pointer]:
+      - /url: /login
