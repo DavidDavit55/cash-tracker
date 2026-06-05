@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.js';
 import expensesRoutes from './routes/expenses.js';
 import categoriesRoutes from './routes/categories.js';
 import budgetsRoutes from './routes/budgets.js';
+import importRoutes from './routes/import.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/budgets', budgetsRoutes);
+app.use('/api/import', importRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

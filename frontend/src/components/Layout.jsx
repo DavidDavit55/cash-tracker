@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Target, Tag, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, Target, Tag, LogOut, Upload } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Layout({ children }) {
@@ -28,6 +28,10 @@ export default function Layout({ children }) {
         <NavLink to="/categories" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <Tag size={22}/>
           <span>קטגוריות</span>
+        </NavLink>
+        <NavLink to="/import" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+          <Upload size={22}/>
+          <span>ייבוא</span>
         </NavLink>
       </nav>
     </div>
