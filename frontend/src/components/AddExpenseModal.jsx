@@ -35,9 +35,7 @@ export default function AddExpenseModal({ categories, editItem, onClose, onSaved
     setError('');
     try {
       if (isEdit) {
-        // עדכון פרטים
         await api.put(`/expenses/${editItem.id}`, form);
-        // אם יש קבלה חדשה — שלח אותה בנפרד
         if (receipt) {
           const fd = new FormData();
           Object.entries(form).forEach(([k, v]) => v && fd.append(k, v));
@@ -46,13 +44,14 @@ export default function AddExpenseModal({ categories, editItem, onClose, onSaved
             headers: { 'Content-Type': 'multipart/form-data' },
           });
         }
+        onSaved(editItem.id); // העבר ID כדי לעדכן בלי reload
       } else {
         const fd = new FormData();
         Object.entries(form).forEach(([k, v]) => v && fd.append(k, v));
         if (receipt) fd.append('receipt', receipt);
         await api.post('/expenses', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        onSaved(null); // null = הוצאה חדשה, טען מחדש
       }
-      onSaved();
     } catch (err) {
       setError(err.response?.data?.error || 'שגיאה בשמירה');
     } finally {

@@ -37,6 +37,19 @@ export default function Expenses() {
     setExpenses(prev => prev.filter(e => e.id !== id));
   };
 
+  const handleSaved = async (updatedId) => {
+    setShowAdd(false);
+    if (updatedId) {
+      // עדכון פריט ספציפי בלי לטעון הכל מחדש
+      const { data } = await api.get(`/expenses?month=${month}&year=${year}`);
+      setExpenses(data);
+    } else {
+      // הוצאה חדשה — טען מחדש
+      load();
+    }
+    setEditItem(null);
+  };
+
   const filtered = expenses.filter(e =>
     !search || e.description?.includes(search) || e.merchant?.includes(search) ||
     String(e.amount).includes(search)
@@ -113,7 +126,7 @@ export default function Expenses() {
           categories={categories}
           editItem={editItem}
           onClose={() => { setShowAdd(false); setEditItem(null); }}
-          onSaved={() => { setShowAdd(false); setEditItem(null); load(); }}
+          onSaved={(id) => handleSaved(id)}
         />
       )}
     </div>
