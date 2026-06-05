@@ -128,6 +128,35 @@ router.post('/', upload.single('receipt'), async (req, res) => {
   }
 });
 
+// PUT /expenses/:id/receipt — עדכון קבלה בלבד
+router.put('/:id/receipt', upload.single('receipt'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'קובץ חסר' });
+  try {
+    const receiptFilename = req.file.filename;
+    const receiptUrl = `/uploads/${req.file.filename}`;
+
+    // מחק קבלה ישנה
+    const { rows: old } = await pool.query(
+      'SELECT receipt_filename FROM expenses WHERE id=$1 AND user_id=$2',
+      [req.params.id, req.user.id]
+    );
+    if (old[0]?.receipt_filename) {
+      const oldPath = path.join(uploadsDir, old[0].receipt_filename);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE expenses SET receipt_url=$1, receipt_filename=$2, updated_at=NOW()
+       WHERE id=$3 AND user_id=$4 RETURNING *`,
+      [receiptUrl, receiptFilename, req.params.id, req.user.id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 // PUT /expenses/:id
 router.put('/:id', async (req, res) => {
   const { amount, description, merchant, category_id, expense_date, notes } = req.body;

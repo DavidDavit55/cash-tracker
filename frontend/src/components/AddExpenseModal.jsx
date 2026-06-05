@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { Camera, Upload, X, Loader } from 'lucide-react';
 import api from '../api/client';
 
+const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+
 export default function AddExpenseModal({ categories, editItem, onClose, onSaved }) {
   const isEdit = !!editItem;
   const [form, setForm] = useState({
@@ -33,16 +35,22 @@ export default function AddExpenseModal({ categories, editItem, onClose, onSaved
     setError('');
     try {
       if (isEdit) {
+        // עדכון פרטים
         await api.put(`/expenses/${editItem.id}`, form);
+        // אם יש קבלה חדשה — שלח אותה בנפרד
+        if (receipt) {
+          const fd = new FormData();
+          Object.entries(form).forEach(([k, v]) => v && fd.append(k, v));
+          fd.append('receipt', receipt);
+          await api.put(`/expenses/${editItem.id}/receipt`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        }
       } else {
         const fd = new FormData();
         Object.entries(form).forEach(([k, v]) => v && fd.append(k, v));
         if (receipt) fd.append('receipt', receipt);
-        const res = await api.post('/expenses', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-        // Auto-fill OCR data
-        if (res.data.ocr) {
-          // Already saved with OCR data
-        }
+        await api.post('/expenses', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       }
       onSaved();
     } catch (err) {
@@ -79,35 +87,39 @@ export default function AddExpenseModal({ categories, editItem, onClose, onSaved
           <button className="icon-btn" onClick={onClose}><X size={20} /></button>
         </div>
 
-        {!isEdit && (
-          <div className="receipt-upload">
-            {preview ? (
-              <div className="receipt-preview">
-                <img src={preview} alt="קבלה" />
-                <button className="btn-sm" onClick={() => { setReceipt(null); setPreview(null); }}>הסר</button>
-              </div>
-            ) : (
-              <div className="receipt-buttons">
-                <button type="button" className="receipt-btn" onClick={() => cameraRef.current.click()}>
-                  <Camera size={24} />
-                  <span>צלם קבלה</span>
-                </button>
-                <button type="button" className="receipt-btn" onClick={() => fileRef.current.click()}>
-                  <Upload size={24} />
-                  <span>העלה תמונה</span>
-                </button>
-              </div>
-            )}
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => handleFile(e.target.files[0])} />
-            <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={e => handleFile(e.target.files[0])} />
-            {receipt && !ocrLoading && (
-              <button type="button" className="btn-secondary" onClick={scanReceipt}>
-                ✨ סרוק קבלה עם AI
+        {/* אזור קבלה — מוצג תמיד */}
+        <div className="receipt-upload">
+          {preview ? (
+            <div className="receipt-preview">
+              <img src={preview} alt="קבלה" />
+              <button className="btn-sm" onClick={() => { setReceipt(null); setPreview(null); }}>הסר</button>
+            </div>
+          ) : editItem?.receipt_url ? (
+            <div className="receipt-preview">
+              <img src={`${API_BASE}${editItem.receipt_url}`} alt="קבלה קיימת" />
+              <button className="btn-sm" onClick={() => fileRef.current.click()}>החלף קבלה</button>
+            </div>
+          ) : (
+            <div className="receipt-buttons">
+              <button type="button" className="receipt-btn" onClick={() => cameraRef.current.click()}>
+                <Camera size={24} />
+                <span>צלם קבלה</span>
               </button>
-            )}
-            {ocrLoading && <div className="ocr-loading"><Loader size={16} className="spin" /> מנתח קבלה...</div>}
-          </div>
-        )}
+              <button type="button" className="receipt-btn" onClick={() => fileRef.current.click()}>
+                <Upload size={24} />
+                <span>העלה תמונה</span>
+              </button>
+            </div>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => handleFile(e.target.files[0])} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={e => handleFile(e.target.files[0])} />
+          {receipt && !ocrLoading && !isEdit && (
+            <button type="button" className="btn-secondary" style={{ marginTop: '8px' }} onClick={scanReceipt}>
+              ✨ סרוק קבלה עם AI
+            </button>
+          )}
+          {ocrLoading && <div className="ocr-loading"><Loader size={16} className="spin" /> מנתח קבלה...</div>}
+        </div>
 
         <form onSubmit={submit}>
           <div className="form-row">
