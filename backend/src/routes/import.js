@@ -231,12 +231,13 @@ router.post('/discount', upload.single('file'), async (req, res) => {
     const wb = XLSX.readFile(req.file.path);
     fs.unlinkSync(req.file.path);
     const rows = parseDiscount(wb);
-    if (!rows.length) return res.status(400).json({ error: 'לא נמצאו הוצאות' });
+    console.log('Discount parsed rows:', rows.length, rows[0]);
+    if (!rows.length) return res.status(400).json({ error: 'לא נמצאו הוצאות בקובץ — ייתכן שהפורמט השתנה' });
     const result = await saveRows(rows, req.user.id);
     res.json(result);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'שגיאה בייבוא' });
+    console.error('Discount import error:', err);
+    res.status(500).json({ error: `שגיאה: ${err.message}` });
   }
 });
 
