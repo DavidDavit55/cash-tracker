@@ -47,3 +47,13 @@ CREATE TABLE IF NOT EXISTS budgets (
 
 -- Default categories (inserted per user on registration)
 -- Done via application code
+
+-- זיכרון קטגוריות לפי שם עסק
+CREATE TABLE IF NOT EXISTS merchant_categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  merchant VARCHAR(255) NOT NULL,
+  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, merchant)
+);

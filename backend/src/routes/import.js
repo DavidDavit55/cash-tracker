@@ -193,10 +193,22 @@ async function saveRows(rows, userId) {
   const { rows: cats } = await pool.query('SELECT id, name FROM categories WHERE user_id=$1', [userId]);
   const catMap = Object.fromEntries(cats.map(c => [c.name, c.id]));
 
+  // טען זיכרון קטגוריות של המשתמש
+  const { rows: memRows } = await pool.query(
+    'SELECT merchant, category_id FROM merchant_categories WHERE user_id=$1', [userId]
+  );
+  const merchantMemory = Object.fromEntries(memRows.map(r => [r.merchant, r.category_id]));
+
   let imported = 0, skipped = 0;
   for (const row of rows) {
-    const mappedCat = CAT_MAP[row.riseup_category] || 'שונות';
-    const categoryId = catMap[mappedCat] || catMap['שונות'] || null;
+    // 1. זיכרון אישי (עדיפות ראשונה)
+    // 2. מיפוי לפי קטגוריית מקור
+    // 3. ברירת מחדל: שונות
+    const categoryId =
+      merchantMemory[row.merchant] ||
+      catMap[CAT_MAP[row.riseup_category]] ||
+      catMap['שונות'] ||
+      null;
 
     const { rows: existing } = await pool.query(
       'SELECT id FROM expenses WHERE user_id=$1 AND merchant=$2 AND amount=$3 AND expense_date=$4',
