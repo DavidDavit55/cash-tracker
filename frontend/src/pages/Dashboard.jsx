@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import api from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 
@@ -22,6 +22,10 @@ export default function Dashboard() {
 
   const totalSpent = parseFloat(stats.total?.total || 0);
 
+  const categoryData = stats.byCategory
+    .map(c => ({ name: c.name, total: parseFloat(c.total), color: c.color || '#6366f1', icon: c.icon }))
+    .sort((a, b) => b.total - a.total);
+
   return (
     <div className="page">
       <div className="page-header">
@@ -42,29 +46,46 @@ export default function Dashboard() {
         <div className="summary-count">{stats.total?.count || 0} עסקאות</div>
       </div>
 
-      {stats.byCategory.length > 0 && (
+      {/* גרף עמודות אופקיות לפי קטגוריה */}
+      {categoryData.length > 0 && (
         <div className="chart-card">
           <h3>פילוח לפי קטגוריה</h3>
-          <ResponsiveContainer width="100%" height={220} dir="ltr">
-            <PieChart>
-              <Pie data={stats.byCategory.map(c => ({ ...c, total: parseFloat(c.total) }))} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={85} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                {stats.byCategory.map((entry, i) => (
-                  <Cell key={i} fill={entry.color || '#6366f1'} />
+          <ResponsiveContainer width="100%" height={categoryData.length * 38 + 20} dir="ltr">
+            <BarChart
+              data={categoryData}
+              layout="vertical"
+              margin={{ top: 0, right: 60, left: 10, bottom: 0 }}
+            >
+              <XAxis type="number" hide />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fontSize: 12, textAnchor: 'start', dx: -10 }}
+                width={120}
+                mirror
+              />
+              <Tooltip
+                formatter={v => [`₪${parseFloat(v).toLocaleString('he-IL', { minimumFractionDigits: 0 })}`, '']}
+                labelFormatter={l => l}
+              />
+              <Bar dataKey="total" radius={[0, 6, 6, 0]} label={{ position: 'right', formatter: v => `₪${Math.round(v).toLocaleString('he-IL')}`, fontSize: 11 }}>
+                {categoryData.map((entry, i) => (
+                  <Cell key={i} fill={entry.color} />
                 ))}
-              </Pie>
-              <Tooltip formatter={v => `₪${parseFloat(v).toLocaleString('he-IL', { minimumFractionDigits: 2 })}`} />
-            </PieChart>
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
+      {/* מגמה חודשית */}
       {stats.monthly.length > 0 && (
         <div className="chart-card">
           <h3>מגמה חודשית</h3>
           <ResponsiveContainer width="100%" height={180} dir="ltr">
             <BarChart data={stats.monthly.map(m => ({ name: MONTHS_HE[m.month - 1], total: parseFloat(m.total) }))}>
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 11 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 10 }} />
               <Tooltip formatter={v => `₪${v.toLocaleString('he-IL')}`} />
               <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -72,14 +93,15 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* תקציבים */}
       {budgets.length > 0 && (
         <div className="card">
-          <h3>תקציבים</h3>
+          <h3 style={{ padding: '14px 16px 0' }}>תקציבים</h3>
           {budgets.map(b => {
             const pct = Math.min(100, (parseFloat(b.spent) / parseFloat(b.amount)) * 100);
             const over = parseFloat(b.spent) > parseFloat(b.amount);
             return (
-              <div key={b.id} className="budget-row">
+              <div key={b.id} className="budget-row" style={{ padding: '10px 16px' }}>
                 <div className="budget-info">
                   <span>{b.icon} {b.category_name}</span>
                   <span className={over ? 'over-budget' : ''}>₪{parseFloat(b.spent).toFixed(0)} / ₪{parseFloat(b.amount).toFixed(0)}</span>
@@ -90,19 +112,6 @@ export default function Dashboard() {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {stats.byCategory.length > 0 && (
-        <div className="card">
-          <h3>לפי קטגוריה</h3>
-          {stats.byCategory.map((cat, i) => (
-            <div key={i} className="category-row">
-              <span className="cat-icon">{cat.icon}</span>
-              <span className="cat-name">{cat.name}</span>
-              <span className="cat-amount">₪{parseFloat(cat.total).toLocaleString('he-IL', { minimumFractionDigits: 2 })}</span>
-            </div>
-          ))}
         </div>
       )}
     </div>
