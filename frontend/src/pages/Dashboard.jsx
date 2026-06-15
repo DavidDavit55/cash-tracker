@@ -46,35 +46,26 @@ export default function Dashboard() {
         <div className="summary-count">{stats.total?.count || 0} עסקאות</div>
       </div>
 
-      {/* גרף עמודות אופקיות לפי קטגוריה */}
+      {/* פילוח לפי קטגוריה — CSS bars */}
       {categoryData.length > 0 && (
         <div className="chart-card">
           <h3>פילוח לפי קטגוריה</h3>
-          <ResponsiveContainer width="100%" height={categoryData.length * 38 + 20} dir="ltr">
-            <BarChart
-              data={categoryData}
-              layout="vertical"
-              margin={{ top: 0, right: 60, left: 10, bottom: 0 }}
-            >
-              <XAxis type="number" hide />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fontSize: 12, textAnchor: 'start', dx: -10 }}
-                width={120}
-                mirror
-              />
-              <Tooltip
-                formatter={v => [`₪${parseFloat(v).toLocaleString('he-IL', { minimumFractionDigits: 0 })}`, '']}
-                labelFormatter={l => l}
-              />
-              <Bar dataKey="total" radius={[0, 6, 6, 0]} label={{ position: 'right', formatter: v => `₪${Math.round(v).toLocaleString('he-IL')}`, fontSize: 11 }}>
-                {categoryData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+            {categoryData.map((cat, i) => {
+              const pct = (cat.total / categoryData[0].total) * 100;
+              return (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.82rem' }}>
+                    <span style={{ fontWeight: 500 }}>{cat.icon} {cat.name}</span>
+                    <span style={{ fontWeight: 700, color: cat.color }}>₪{cat.total.toLocaleString('he-IL', { maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: cat.color, borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
