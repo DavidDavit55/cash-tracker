@@ -82,6 +82,10 @@ function parseDiscount(wb) {
     if (!row || !row[0]) continue;
     const amount = parseFloat(row[3]);
     if (isNaN(amount) || amount >= 0) continue; // רק הוצאות
+    // סנן חיובי אשראי (כבר מיובאים מכאל/מקס)
+    const desc = String(row[2] || '').trim();
+    const creditKeywords = ['חיוב לכרטיס', 'מקס איט פי', 'חיוב כרטיס', 'ויזה כאל', 'ישראכרט'];
+    if (creditKeywords.some(k => desc.includes(k))) continue;
     result.push({
       expense_date: excelDateToJS(row[0]),
       merchant: String(row[2] || '').trim(),
