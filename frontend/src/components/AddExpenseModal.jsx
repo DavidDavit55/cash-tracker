@@ -62,15 +62,15 @@ export default function AddExpenseModal({ categories, editItem, onClose, onSaved
   const scanReceipt = async () => {
     if (!receipt) return;
     setOcrLoading(true);
+    setError('');
     try {
       const fd = new FormData();
       fd.append('receipt', receipt);
-      const res = await api.post('/expenses', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await api.post('/expenses/scan', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       if (res.data.amount) setForm(p => ({ ...p, amount: res.data.amount }));
       if (res.data.merchant) setForm(p => ({ ...p, merchant: res.data.merchant }));
       if (res.data.description) setForm(p => ({ ...p, description: res.data.description }));
-      if (res.data.expense_date) setForm(p => ({ ...p, expense_date: res.data.expense_date }));
-      onSaved();
+      if (res.data.date) setForm(p => ({ ...p, expense_date: res.data.date }));
     } catch {
       setError('שגיאה בסריקת קבלה');
     } finally {

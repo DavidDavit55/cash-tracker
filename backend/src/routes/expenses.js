@@ -60,6 +60,24 @@ async function extractReceiptData(imagePath) {
   }
 }
 
+// POST /expenses/scan — OCR only, no save
+router.post('/scan', upload.single('receipt'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'קובץ חסר' });
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'ANTHROPIC_API_KEY לא מוגדר' });
+    }
+    const ocr = await extractReceiptData(req.file.path);
+    fs.unlinkSync(req.file.path);
+    res.json(ocr);
+  } catch (err) {
+    console.error('OCR error:', err);
+    if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: 'שגיאה בסריקה' });
+  }
+});
+
 // GET /expenses
 router.get('/', async (req, res) => {
   const { month, year, category_id, limit = 50, offset = 0 } = req.query;
