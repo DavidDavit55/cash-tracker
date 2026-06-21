@@ -7,6 +7,6 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 4173,
-    allowedHosts: ['.railway.app'],
+    allowedHosts: ['.railway.app', 'money.davit-fin.co.il'],
   },
 })
