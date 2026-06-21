@@ -8,7 +8,10 @@ export default function Layout({ children }) {
   return (
     <div className="app-layout">
       <header className="app-header">
-        <span className="app-title">💵 מעקב מזומן</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/logo.png" alt="לוגו" style={{ height: '32px', objectFit: 'contain' }} />
+          <span className="app-title">ניהול משק בית</span>
+        </div>
         <button className="icon-btn" onClick={logout} title="התנתק"><LogOut size={18}/></button>
       </header>
       <main className="app-main">{children}</main>
