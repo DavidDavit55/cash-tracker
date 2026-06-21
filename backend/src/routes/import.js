@@ -162,14 +162,17 @@ function parseMax(wb) {
   for (let i = headerRow + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || !row[0]) continue;
-    const amount = parseFloat(row[2]);
+    // פורמט חדש: סכום בעמודה 5, קטגוריה בעמודה 2
+    // פורמט ישן: סכום בעמודה 2
+    const amount = parseFloat(row[5]) || parseFloat(row[2]);
     if (isNaN(amount) || amount <= 0) continue;
+    const category = String(row[2] || '').trim();
     result.push({
       expense_date: excelDateToJS(row[0]),
       merchant: String(row[1] || '').trim(),
       amount,
       description: `מקס - ${row[4] || 'רכישה'}`,
-      riseup_category: null,
+      riseup_category: isNaN(parseFloat(row[2])) ? category : null,
     });
   }
   return result;
