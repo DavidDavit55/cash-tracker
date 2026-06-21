@@ -119,7 +119,6 @@ function parseDiscount(wb) {
 
 function parseCal(wb) {
   const result = [];
-  // שני sheets: עסקאות רגילות + חו"ל
   for (const sheetName of wb.SheetNames) {
     if (sheetName.includes('סיכום')) continue;
     const ws = wb.Sheets[sheetName];
@@ -131,17 +130,22 @@ function parseCal(wb) {
       }
     }
     if (headerRow === -1) continue;
+    const header = rows[headerRow];
+    // זהה פורמט: סכום בעמודה 2 (כאל ישן) או עמודה 5 (כאל חדש/מקס)
+    const amountCol = String(header[2] || '').includes('סכום') ? 2 : 5;
+    const categoryCol = amountCol === 5 ? 2 : null;
+
     for (let i = headerRow + 1; i < rows.length; i++) {
       const row = rows[i];
       if (!row || !row[0]) continue;
-      const amount = parseFloat(row[5]);
+      const amount = parseFloat(row[amountCol]);
       if (isNaN(amount) || amount <= 0) continue;
       result.push({
         expense_date: excelDateToJS(row[0]),
         merchant: String(row[1] || '').trim(),
         amount,
         description: `כאל - ${sheetName}`,
-        riseup_category: String(row[2] || '').trim(),
+        riseup_category: categoryCol !== null ? String(row[categoryCol] || '').trim() : null,
       });
     }
   }
