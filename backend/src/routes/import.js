@@ -65,36 +65,56 @@ function excelDateToJS(val) {
 
 // ---- PARSERS ----
 
+const INSURANCE_KEYWORDS = ['איילון', 'הראל', 'פניקס', 'מגדל', 'כלל', 'מנורה', 'הפניקס', 'ביטוח', 'מבטחים', 'מיטב', 'הסתדרות', 'חבר'];
+const CREDIT_KEYWORDS = ['חיוב לכרטיס', 'מקס איט פי', 'חיוב כרטיס', 'ויזה כאל', 'ישראכרט', 'חיוב ממקס'];
+
 function parseDiscount(wb) {
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-  // מצא שורת כותרות
   let headerRow = -1;
   for (let i = 0; i < rows.length; i++) {
     if (rows[i] && rows[i][0] && String(rows[i][0]).includes('תאריך')) {
       headerRow = i; break;
     }
   }
-  if (headerRow === -1) return [];
-  const result = [];
+  if (headerRow === -1) return { expenses: [], incomes: [] };
+
+  const expenses = [];
+  const incomes = [];
+
   for (let i = headerRow + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || !row[0]) continue;
     const amount = parseFloat(row[3]);
-    if (isNaN(amount) || amount >= 0) continue; // רק הוצאות
-    // סנן חיובי אשראי (כבר מיובאים מכאל/מקס)
+    if (isNaN(amount) || amount === 0) continue;
     const desc = String(row[2] || '').trim();
-    const creditKeywords = ['חיוב לכרטיס', 'מקס איט פי', 'חיוב כרטיס', 'ויזה כאל', 'ישראכרט'];
-    if (creditKeywords.some(k => desc.includes(k))) continue;
-    result.push({
-      expense_date: excelDateToJS(row[0]),
-      merchant: String(row[2] || '').trim(),
-      amount: Math.abs(amount),
-      description: 'עו"ש דיסקונט',
-      riseup_category: null,
-    });
+    const date = excelDateToJS(row[0]);
+
+    // סנן חיובי אשראי משני הכיוונים
+    if (CREDIT_KEYWORDS.some(k => desc.includes(k))) continue;
+
+    if (amount < 0) {
+      // הוצאה
+      expenses.push({
+        expense_date: date,
+        merchant: desc,
+        amount: Math.abs(amount),
+        description: 'עו"ש דיסקונט',
+        riseup_category: null,
+      });
+    } else {
+      // הכנסה — זהה מקור
+      const isInsurance = INSURANCE_KEYWORDS.some(k => desc.includes(k));
+      incomes.push({
+        income_date: date,
+        source: isInsurance ? 'עמלות ביטוח' : 'אחר',
+        description: desc,
+        amount,
+        payment_method: 'העברה בנקאית',
+      });
+    }
   }
-  return result;
+  return { expenses, incomes };
 }
 
 function parseCal(wb) {
@@ -189,6 +209,24 @@ function parseRiseUpCSV(content) {
   return result;
 }
 
+async function saveIncomes(incomes, userId) {
+  let imported = 0, skipped = 0;
+  for (const row of incomes) {
+    const { rows: existing } = await pool.query(
+      'SELECT id FROM incomes WHERE user_id=$1 AND description=$2 AND amount=$3 AND income_date=$4',
+      [userId, row.description, row.amount, row.income_date]
+    );
+    if (existing.length > 0) { skipped++; continue; }
+    await pool.query(
+      `INSERT INTO incomes (user_id, amount, source, description, income_date, payment_method)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [userId, row.amount, row.source, row.description, row.income_date, row.payment_method]
+    );
+    imported++;
+  }
+  return { imported, skipped };
+}
+
 async function saveRows(rows, userId) {
   const { rows: cats } = await pool.query('SELECT id, name FROM categories WHERE user_id=$1', [userId]);
   const catMap = Object.fromEntries(cats.map(c => [c.name, c.id]));
@@ -248,11 +286,17 @@ router.post('/discount', upload.single('file'), async (req, res) => {
   try {
     const wb = XLSX.readFile(req.file.path);
     fs.unlinkSync(req.file.path);
-    const rows = parseDiscount(wb);
-    console.log('Discount parsed rows:', rows.length, rows[0]);
-    if (!rows.length) return res.status(400).json({ error: 'לא נמצאו הוצאות בקובץ — ייתכן שהפורמט השתנה' });
-    const result = await saveRows(rows, req.user.id);
-    res.json(result);
+    const { expenses, incomes } = parseDiscount(wb);
+    if (!expenses.length && !incomes.length) return res.status(400).json({ error: 'לא נמצאו תנועות בקובץ — ייתכן שהפורמט השתנה' });
+    const expResult = await saveRows(expenses, req.user.id);
+    const incResult = await saveIncomes(incomes, req.user.id);
+    res.json({
+      imported: expResult.imported + incResult.imported,
+      skipped: expResult.skipped + incResult.skipped,
+      total: expResult.total + incomes.length,
+      expenses: expResult,
+      incomes: incResult,
+    });
   } catch (err) {
     console.error('Discount import error:', err);
     res.status(500).json({ error: `שגיאה: ${err.message}` });
