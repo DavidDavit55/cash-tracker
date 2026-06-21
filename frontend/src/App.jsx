@@ -6,6 +6,7 @@ import Expenses from './pages/Expenses';
 import Budgets from './pages/Budgets';
 import Categories from './pages/Categories';
 import Import from './pages/Import';
+import Incomes from './pages/Incomes';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import './index.css';
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
           <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path="/import" element={<ProtectedRoute><Import /></ProtectedRoute>} />
+          <Route path="/incomes" element={<ProtectedRoute><Incomes /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

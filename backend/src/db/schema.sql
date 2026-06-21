@@ -48,6 +48,20 @@ CREATE TABLE IF NOT EXISTS budgets (
 -- Default categories (inserted per user on registration)
 -- Done via application code
 
+-- הכנסות
+CREATE TABLE IF NOT EXISTS incomes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  amount DECIMAL(10,2) NOT NULL,
+  source VARCHAR(255),
+  description VARCHAR(500),
+  income_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  payment_method VARCHAR(50) DEFAULT 'העברה בנקאית',
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- זיכרון קטגוריות לפי שם עסק
 CREATE TABLE IF NOT EXISTS merchant_categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
