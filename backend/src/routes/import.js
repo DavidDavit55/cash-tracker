@@ -166,6 +166,11 @@ function parseMax(wb) {
   for (let i = headerRow + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || !row[0]) continue;
+    // סנן אשראי מתגלגל
+    const merchant = String(row[1] || '').trim();
+    const txType = String(row[4] || '').trim();
+    if (merchant.includes('יתרת עסקות מצטברת') || txType.includes('העברה לסל מצטבר')) continue;
+
     // פורמט חדש: סכום בעמודה 5, קטגוריה בעמודה 2
     // פורמט ישן: סכום בעמודה 2
     const amount = parseFloat(row[5]) || parseFloat(row[2]);
@@ -173,7 +178,7 @@ function parseMax(wb) {
     const category = String(row[2] || '').trim();
     result.push({
       expense_date: excelDateToJS(row[0]),
-      merchant: String(row[1] || '').trim(),
+      merchant,
       amount,
       description: `מקס - ${row[4] || 'רכישה'}`,
       riseup_category: isNaN(parseFloat(row[2])) ? category : null,
