@@ -8,6 +8,7 @@ const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','�
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
+  const [incomeStats, setIncomeStats] = useState(null);
   const [budgets, setBudgets] = useState([]);
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -15,12 +16,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     api.get(`/expenses/stats/summary?month=${month}&year=${year}`).then(r => setStats(r.data));
+    api.get(`/incomes/stats/summary?month=${month}&year=${year}`).then(r => setIncomeStats(r.data));
     api.get(`/budgets?month=${month}&year=${year}`).then(r => setBudgets(r.data));
   }, [month, year]);
 
   if (!stats) return <div className="loading">טוען...</div>;
 
   const totalSpent = parseFloat(stats.total?.total || 0);
+  const totalIncome = parseFloat(incomeStats?.total?.total || 0);
+  const cashflow = totalIncome - totalSpent;
 
   const categoryData = stats.byCategory
     .map(c => ({ name: c.name, total: parseFloat(c.total), color: c.color || '#6366f1', icon: c.icon }))
@@ -40,10 +44,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="summary-card">
-        <div className="summary-amount">₪{totalSpent.toLocaleString('he-IL', { minimumFractionDigits: 2 })}</div>
-        <div className="summary-label">סה"כ הוצאות — {MONTHS_HE[month - 1]} {year}</div>
-        <div className="summary-count">{stats.total?.count || 0} עסקאות</div>
+      <div className="summary-card" style={{ background: cashflow >= 0 ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'linear-gradient(135deg, #ef4444, #dc2626)' }}>
+        <div className="summary-amount" style={{ fontSize: '2rem' }}>
+          {cashflow >= 0 ? '+' : ''}₪{cashflow.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+        </div>
+        <div className="summary-label">תזרים — {MONTHS_HE[month - 1]} {year}</div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '10px', fontSize: '0.82rem', opacity: 0.9 }}>
+          <span>⬆️ הכנסות ₪{totalIncome.toLocaleString('he-IL', { maximumFractionDigits: 0 })}</span>
+          <span>⬇️ הוצאות ₪{totalSpent.toLocaleString('he-IL', { maximumFractionDigits: 0 })}</span>
+        </div>
       </div>
 
       {/* פילוח לפי קטגוריה — CSS bars */}
