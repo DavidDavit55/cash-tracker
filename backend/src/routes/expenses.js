@@ -203,6 +203,29 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// PATCH /expenses/:id — עדכון קטגוריה בלבד
+router.patch('/:id', async (req, res) => {
+  const { category_id } = req.body;
+  try {
+    const { rows } = await pool.query(
+      `UPDATE expenses SET category_id=$1, updated_at=NOW() WHERE id=$2 AND user_id=$3 RETURNING *`,
+      [category_id, req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'לא נמצא' });
+    if (category_id && rows[0].merchant) {
+      await pool.query(
+        `INSERT INTO merchant_categories (user_id, merchant, category_id)
+         VALUES ($1,$2,$3) ON CONFLICT (user_id, merchant) DO UPDATE SET category_id=$3, updated_at=NOW()`,
+        [req.user.id, rows[0].merchant, category_id]
+      );
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 // DELETE /expenses/:id
 router.delete('/:id', async (req, res) => {
   const { rows } = await pool.query(
