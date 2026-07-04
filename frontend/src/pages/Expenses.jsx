@@ -21,7 +21,7 @@ export default function Expenses() {
   const load = async () => {
     setLoading(true);
     const [exRes, catRes] = await Promise.all([
-      api.get(`/expenses?month=${month}&year=${year}${filterCat ? `&category_id=${filterCat}` : ''}`),
+      api.get(`/expenses?month=${month}&year=${year}&limit=500${filterCat ? `&category_id=${filterCat}` : ''}`),
       api.get('/categories'),
     ]);
     setExpenses(exRes.data);
@@ -41,7 +41,7 @@ export default function Expenses() {
     setShowAdd(false);
     if (updatedId) {
       // עדכון פריט ספציפי בלי לטעון הכל מחדש
-      const { data } = await api.get(`/expenses?month=${month}&year=${year}`);
+      const { data } = await api.get(`/expenses?month=${month}&year=${year}&limit=500`);
       setExpenses(data);
     } else {
       // הוצאה חדשה — טען מחדש
