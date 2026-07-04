@@ -67,6 +67,8 @@ function excelDateToJS(val) {
 
 const INSURANCE_KEYWORDS = ['איילון', 'הראל', 'פניקס', 'מגדל', 'כלל', 'מנורה', 'הפניקס', 'ביטוח', 'מבטחים', 'מיטב', 'הסתדרות', 'חבר'];
 const CREDIT_KEYWORDS = ['חיוב לכרטיס', 'מקס איט פי', 'חיוב כרטיס', 'ויזה כאל', 'ישראכרט', 'חיוב ממקס'];
+// תנועות שאינן הכנסה אמיתית: הלוואות, העברות עצמיות, ריבית, מיסים
+const NON_INCOME_KEYWORDS = ['הלוואה', 'קבלת תשלום על יתרת זכות', 'תשלום ריבית', 'תשלום מס במקור', 'העברה מדוד'];
 
 function parseDiscount(wb) {
   const ws = wb.Sheets[wb.SheetNames[0]];
@@ -103,6 +105,8 @@ function parseDiscount(wb) {
         riseup_category: null,
       });
     } else {
+      // דלג על תנועות שאינן הכנסה אמיתית
+      if (NON_INCOME_KEYWORDS.some(k => desc.includes(k))) continue;
       // הכנסה — זהה מקור
       const isInsurance = INSURANCE_KEYWORDS.some(k => desc.includes(k));
       incomes.push({
