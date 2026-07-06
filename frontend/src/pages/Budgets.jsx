@@ -39,13 +39,10 @@ export default function Budgets() {
 
   const changeCategory = async (budgetId, expenseId, newCatId) => {
     await api.patch(`/expenses/${expenseId}`, { category_id: newCatId });
-    // הסר מהרשימה הנוכחית
-    setExpenses(prev => ({
-      ...prev,
-      [budgetId]: prev[budgetId].filter(e => e.id !== expenseId),
-    }));
-    // רענן תקציבים
-    load();
+    // נקה קאש הוצאות כולו — יטען מחדש בפתיחה הבאה
+    setExpenses({});
+    setExpanded(null);
+    await load();
   };
 
   const saveEdit = async (b) => {
