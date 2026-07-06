@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Pencil, Check, X } from 'lucide-react';
 import api from '../api/client';
 
 const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
@@ -14,6 +14,8 @@ export default function Budgets() {
   const [form, setForm] = useState({ category_id: '', amount: '' });
   const [expanded, setExpanded] = useState(null);
   const [expenses, setExpenses] = useState({});
+  const [editingId, setEditingId] = useState(null);
+  const [editAmount, setEditAmount] = useState('');
 
   const load = async () => {
     const [bRes, cRes] = await Promise.all([
@@ -43,6 +45,13 @@ export default function Budgets() {
       [budgetId]: prev[budgetId].filter(e => e.id !== expenseId),
     }));
     // רענן תקציבים
+    load();
+  };
+
+  const saveEdit = async (b) => {
+    if (!editAmount || isNaN(editAmount)) return;
+    await api.put(`/budgets/${b.id}`, { category_id: b.category_id, amount: parseFloat(editAmount), month, year });
+    setEditingId(null);
     load();
   };
 
@@ -133,12 +142,28 @@ export default function Budgets() {
 
             return (
               <div key={b.id} className="budget-card">
-                <div className="budget-header" onClick={() => toggleExpand(b)} style={{ cursor: 'pointer' }}>
+                <div className="budget-header" onClick={() => editingId !== b.id && toggleExpand(b)} style={{ cursor: 'pointer' }}>
                   <span className="budget-cat">{b.icon} {b.category_name}</span>
                   <div className="budget-amounts">
                     <span className={over ? 'over-budget' : ''}>₪{spent.toFixed(0)}</span>
                     <span className="budget-sep"> / </span>
-                    <span>₪{budget.toFixed(0)}</span>
+                    {editingId === b.id ? (
+                      <span onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <input
+                          type="number"
+                          value={editAmount}
+                          onChange={e => setEditAmount(e.target.value)}
+                          autoFocus
+                          style={{ width: '80px', padding: '2px 6px', borderRadius: '6px', border: '1px solid #6366f1', fontSize: '0.85rem', textAlign: 'center' }}
+                          onKeyDown={e => { if (e.key === 'Enter') saveEdit(b); if (e.key === 'Escape') setEditingId(null); }}
+                        />
+                        <button className="icon-btn" onClick={() => saveEdit(b)}><Check size={14} color="#22c55e"/></button>
+                        <button className="icon-btn" onClick={() => setEditingId(null)}><X size={14} color="#ef4444"/></button>
+                      </span>
+                    ) : (
+                      <span>₪{budget.toFixed(0)}</span>
+                    )}
+                    <button className="icon-btn" onClick={e => { e.stopPropagation(); setEditingId(b.id); setEditAmount(budget.toFixed(0)); }}><Pencil size={13}/></button>
                     <button className="icon-btn danger" onClick={e => { e.stopPropagation(); remove(b.id); }}><Trash2 size={14}/></button>
                     {isOpen ? <ChevronUp size={16} style={{ color: '#94a3b8' }} /> : <ChevronDown size={16} style={{ color: '#94a3b8' }} />}
                   </div>

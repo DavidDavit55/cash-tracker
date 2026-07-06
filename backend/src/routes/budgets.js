@@ -36,6 +36,16 @@ router.post('/', async (req, res) => {
   res.json(rows[0]);
 });
 
+router.put('/:id', async (req, res) => {
+  const { amount } = req.body;
+  const { rows } = await pool.query(
+    'UPDATE budgets SET amount=$1 WHERE id=$2 AND user_id=$3 RETURNING *',
+    [amount, req.params.id, req.user.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'לא נמצא' });
+  res.json(rows[0]);
+});
+
 router.delete('/:id', async (req, res) => {
   await pool.query('DELETE FROM budgets WHERE id=$1 AND user_id=$2', [req.params.id, req.user.id]);
   res.json({ success: true });
