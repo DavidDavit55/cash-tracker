@@ -100,6 +100,21 @@ export default function Budgets() {
         </div>
       )}
 
+      {budgets.length > 0 && (() => {
+        const totalBudget = budgets.reduce((s, b) => s + parseFloat(b.amount), 0);
+        const totalSpent = budgets.reduce((s, b) => s + parseFloat(b.spent), 0);
+        const over = totalSpent > totalBudget;
+        return (
+          <div className="summary-card" style={{ background: over ? 'linear-gradient(135deg,#ef4444,#dc2626)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', marginBottom: '12px' }}>
+            <div className="summary-amount">₪{totalSpent.toLocaleString('he-IL', { maximumFractionDigits: 0 })} / ₪{totalBudget.toLocaleString('he-IL', { maximumFractionDigits: 0 })}</div>
+            <div className="summary-label">סה"כ הוצאות מתוך תקציב</div>
+            <div style={{ marginTop: '6px', fontSize: '0.85rem', opacity: 0.9 }}>
+              {over ? `חריגה של ₪${(totalSpent - totalBudget).toLocaleString('he-IL', { maximumFractionDigits: 0 })}` : `נותר ₪${(totalBudget - totalSpent).toLocaleString('he-IL', { maximumFractionDigits: 0 })}`}
+            </div>
+          </div>
+        );
+      })()}
+
       {budgets.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">🎯</div>
