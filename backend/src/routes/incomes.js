@@ -5,6 +5,8 @@ import { authMiddleware } from '../middleware/auth.js';
 const router = Router();
 router.use(authMiddleware);
 
+const VAT = 1.18;
+
 // GET /incomes
 router.get('/', async (req, res) => {
   const { month, year } = req.query;
@@ -22,18 +24,25 @@ router.get('/', async (req, res) => {
 // GET /incomes/stats/summary
 router.get('/stats/summary', async (req, res) => {
   const { month, year } = req.query;
-  const m = month || new Date().getMonth() + 1;
-  const y = year || new Date().getFullYear();
+  const m = parseInt(month) || new Date().getMonth() + 1;
+  const y = parseInt(year) || new Date().getFullYear();
+
+  // תקופת דיווח דו-חודשית (ינואר-פברואר, מרץ-אפריל, וכו')
+  const periodStart = Math.floor((m - 1) / 2) * 2 + 1;
+  const periodEnd = periodStart + 1;
+
   try {
     const { rows: bySource } = await pool.query(
-      `SELECT source, payment_method, SUM(amount) as total, COUNT(*) as count
+      `SELECT source, payment_method, SUM(amount) as total, COUNT(*) as count,
+              BOOL_OR(includes_vat) as has_vat
        FROM incomes WHERE user_id=$1 AND EXTRACT(MONTH FROM income_date)=$2 AND EXTRACT(YEAR FROM income_date)=$3
        GROUP BY source, payment_method ORDER BY total DESC`,
       [req.user.id, m, y]
     );
     const { rows: total } = await pool.query(
-      `SELECT SUM(amount) as total, COUNT(*) as count FROM incomes
-       WHERE user_id=$1 AND EXTRACT(MONTH FROM income_date)=$2 AND EXTRACT(YEAR FROM income_date)=$3`,
+      `SELECT SUM(amount) as total, COUNT(*) as count,
+              SUM(CASE WHEN includes_vat THEN amount ELSE 0 END) as vat_gross
+       FROM incomes WHERE user_id=$1 AND EXTRACT(MONTH FROM income_date)=$2 AND EXTRACT(YEAR FROM income_date)=$3`,
       [req.user.id, m, y]
     );
     const { rows: monthly } = await pool.query(
@@ -42,7 +51,35 @@ router.get('/stats/summary', async (req, res) => {
        GROUP BY month, year ORDER BY year, month`,
       [req.user.id]
     );
-    res.json({ bySource, total: total[0], monthly });
+
+    // מע"מ דו-חודשי
+    const { rows: vatPeriod } = await pool.query(
+      `SELECT SUM(amount) as vat_gross
+       FROM incomes WHERE user_id=$1 AND includes_vat=true
+         AND EXTRACT(YEAR FROM income_date)=$2
+         AND EXTRACT(MONTH FROM income_date) BETWEEN $3 AND $4`,
+      [req.user.id, y, periodStart, periodEnd]
+    );
+
+    const MONTHS_HE = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+    const vatGrossMonth = parseFloat(total[0]?.vat_gross || 0);
+    const vatGrossP = parseFloat(vatPeriod[0]?.vat_gross || 0);
+
+    res.json({
+      bySource,
+      total: total[0],
+      monthly,
+      vat: {
+        month_gross: vatGrossMonth,
+        month_net: vatGrossMonth / VAT,
+        month_vat: vatGrossMonth - vatGrossMonth / VAT,
+        period_gross: vatGrossP,
+        period_net: vatGrossP / VAT,
+        period_vat: vatGrossP - vatGrossP / VAT,
+        period_label: `${MONTHS_HE[periodStart]}–${MONTHS_HE[periodEnd]} ${y}`,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'שגיאת שרת' });
@@ -51,15 +88,15 @@ router.get('/stats/summary', async (req, res) => {
 
 // POST /incomes
 router.post('/', async (req, res) => {
-  const { amount, source, description, income_date, payment_method, notes } = req.body;
+  const { amount, source, description, income_date, payment_method, notes, includes_vat } = req.body;
   if (!amount) return res.status(400).json({ error: 'סכום חסר' });
   try {
     const { rows } = await pool.query(
-      `INSERT INTO incomes (user_id, amount, source, description, income_date, payment_method, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO incomes (user_id, amount, source, description, income_date, payment_method, notes, includes_vat)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [req.user.id, amount, source || null, description || null,
        income_date || new Date().toISOString().split('T')[0],
-       payment_method || 'העברה בנקאית', notes || null]
+       payment_method || 'העברה בנקאית', notes || null, !!includes_vat]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -70,12 +107,12 @@ router.post('/', async (req, res) => {
 
 // PUT /incomes/:id
 router.put('/:id', async (req, res) => {
-  const { amount, source, description, income_date, payment_method, notes } = req.body;
+  const { amount, source, description, income_date, payment_method, notes, includes_vat } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE incomes SET amount=$1, source=$2, description=$3, income_date=$4, payment_method=$5, notes=$6, updated_at=NOW()
-       WHERE id=$7 AND user_id=$8 RETURNING *`,
-      [amount, source, description, income_date, payment_method, notes, req.params.id, req.user.id]
+      `UPDATE incomes SET amount=$1, source=$2, description=$3, income_date=$4, payment_method=$5, notes=$6, includes_vat=$7, updated_at=NOW()
+       WHERE id=$8 AND user_id=$9 RETURNING *`,
+      [amount, source, description, income_date, payment_method, notes, !!includes_vat, req.params.id, req.user.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'לא נמצא' });
     res.json(rows[0]);

@@ -265,10 +265,11 @@ async function saveIncomes(incomes, userId) {
       [userId, row.description, row.amount, row.income_date]
     );
     if (existing.length > 0) { skipped++; continue; }
+    const includes_vat = row.source === 'עמלות ביטוח';
     await pool.query(
-      `INSERT INTO incomes (user_id, amount, source, description, income_date, payment_method)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [userId, row.amount, row.source, row.description, row.income_date, row.payment_method]
+      `INSERT INTO incomes (user_id, amount, source, description, income_date, payment_method, includes_vat)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [userId, row.amount, row.source, row.description, row.income_date, row.payment_method, includes_vat]
     );
     imported++;
   }
