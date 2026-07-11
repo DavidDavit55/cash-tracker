@@ -254,7 +254,7 @@ function IncomeModal({ editItem, onClose, onSaved }) {
               style={{ width: '18px', height: '18px', accentColor: '#f59e0b', cursor: 'pointer' }}
             />
             <label htmlFor="includes_vat" style={{ cursor: 'pointer', marginBottom: 0 }}>
-              הסכום כולל מע"מ (17%) — יחושב חוב רבעוני
+              הסכום כולל מע"מ (18%) — יחושב חוב דו-חודשי
             </label>
           </div>
 
