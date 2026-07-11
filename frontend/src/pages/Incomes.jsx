@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, TrendingUp, Receipt } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, Receipt, Pencil } from 'lucide-react';
 import api from '../api/client';
 
 const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
@@ -141,6 +141,7 @@ export default function Incomes() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="expense-amount" style={{ color: '#22c55e' }}>+₪{fmt(gross)}</span>
+                <button className="icon-btn" onClick={() => { setEditItem(inc); setShowModal(true); }}><Pencil size={15} color="#6366f1" /></button>
                 <button className="icon-btn" onClick={() => handleDelete(inc.id)}><Trash2 size={16} color="#ef4444" /></button>
               </div>
             </div>
