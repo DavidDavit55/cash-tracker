@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, Edit2, Search, Filter, Camera } from 'lucide-react';
+import { Trash2, Edit2, Search, AlertTriangle, X } from 'lucide-react';
 import api from '../api/client';
 import AddExpenseModal from '../components/AddExpenseModal';
 import { format } from 'date-fns';
@@ -17,6 +17,8 @@ export default function Expenses() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [loading, setLoading] = useState(false);
+  const [duplicates, setDuplicates] = useState([]);
+  const [showDuplicates, setShowDuplicates] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -27,6 +29,9 @@ export default function Expenses() {
     setExpenses(exRes.data);
     setCategories(catRes.data);
     setLoading(false);
+    // בדוק כפילויות
+    const dupRes = await api.get(`/expenses/potential-duplicates?month=${month}&year=${year}`);
+    setDuplicates(dupRes.data);
   };
 
   useEffect(() => { load(); }, [month, year, filterCat]);
@@ -35,6 +40,12 @@ export default function Expenses() {
     if (!confirm('למחוק הוצאה זו?')) return;
     await api.delete(`/expenses/${id}`);
     setExpenses(prev => prev.filter(e => e.id !== id));
+    load();
+  };
+
+  const deleteDuplicate = async id => {
+    await api.delete(`/expenses/${id}`);
+    load();
   };
 
   const handleSaved = async (updatedId) => {
@@ -85,6 +96,54 @@ export default function Expenses() {
           {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
         </select>
       </div>
+
+      {/* באנר כפילויות */}
+      {duplicates.length > 0 && (
+        <div onClick={() => setShowDuplicates(true)} style={{
+          display: 'flex', alignItems: 'center', gap: '10px', background: '#fef3c7',
+          border: '1px solid #f59e0b', borderRadius: '10px', padding: '10px 14px',
+          marginBottom: '12px', cursor: 'pointer'
+        }}>
+          <AlertTriangle size={18} color="#d97706" />
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#92400e', flex: 1 }}>
+            נמצאו {duplicates.length} עסקאות חשודות ככפולות — לחץ לסקירה
+          </span>
+        </div>
+      )}
+
+      {/* מודל כפילויות */}
+      {showDuplicates && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowDuplicates(false)}>
+          <div className="modal" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+            <div className="modal-header">
+              <h3>עסקאות חשודות ככפולות</h3>
+              <button className="icon-btn" onClick={() => setShowDuplicates(false)}><X size={18} /></button>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '12px' }}>
+              אותו סכום ואותו תאריך — בחר איזו למחוק
+            </p>
+            {duplicates.map((group, i) => (
+              <div key={i} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '6px' }}>
+                  ₪{parseFloat(group.amount).toLocaleString('he-IL', { minimumFractionDigits: 2 })} · {new Date(group.expense_date).toLocaleDateString('he-IL')}
+                </div>
+                {group.entries.map(entry => (
+                  <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', gap: '8px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>{entry.merchant || entry.description || 'ללא שם'}</span>
+                    <button className="btn-secondary" style={{ fontSize: '0.75rem', padding: '4px 10px', color: '#ef4444', borderColor: '#ef4444' }}
+                      onClick={() => deleteDuplicate(entry.id)}>
+                      מחק
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ))}
+            {duplicates.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#22c55e', padding: '20px' }}>אין כפילויות!</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="loading">טוען...</div>

@@ -78,6 +78,27 @@ router.post('/scan', upload.single('receipt'), async (req, res) => {
   }
 });
 
+// GET /expenses/potential-duplicates
+router.get('/potential-duplicates', async (req, res) => {
+  const { month, year } = req.query;
+  let where = 'WHERE user_id=$1';
+  const params = [req.user.id];
+  if (month && year) {
+    params.push(month, year);
+    where += ` AND EXTRACT(MONTH FROM expense_date)=$${params.length-1} AND EXTRACT(YEAR FROM expense_date)=$${params.length}`;
+  }
+  const { rows } = await pool.query(
+    `SELECT amount, expense_date,
+            json_agg(json_build_object('id',id,'merchant',merchant,'description',description,'category_id',category_id) ORDER BY created_at) as entries
+     FROM expenses ${where}
+     GROUP BY amount, expense_date
+     HAVING COUNT(*) > 1
+     ORDER BY expense_date DESC`,
+    params
+  );
+  res.json(rows);
+});
+
 // GET /expenses
 router.get('/', async (req, res) => {
   const { month, year, category_id, limit = 50, offset = 0 } = req.query;
