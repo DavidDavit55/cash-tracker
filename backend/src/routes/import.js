@@ -176,6 +176,8 @@ function parseCal(wb) {
       if (!row || !row[0]) continue;
       const amount = parseFloat(row[amountCol]);
       if (isNaN(amount) || amount <= 0) continue;
+      const merchantName = String(row[1] || '').trim();
+      if (merchantName.includes('יתרת אשראי מתגלגל') || merchantName.includes('יתרת עסקות מצטברת')) continue;
       result.push({
         expense_date: excelDateToJS(row[0]),
         merchant: String(row[1] || '').trim(),
@@ -205,7 +207,7 @@ function parseMax(wb) {
     // סנן אשראי מתגלגל
     const merchant = String(row[1] || '').trim();
     const txType = String(row[4] || '').trim();
-    if (merchant.includes('יתרת עסקות מצטברת') || txType.includes('העברה לסל מצטבר')) continue;
+    if (merchant.includes('יתרת עסקות מצטברת') || merchant.includes('יתרת אשראי מתגלגל') || txType.includes('העברה לסל מצטבר')) continue;
 
     // פורמט חדש: סכום בעמודה 5, קטגוריה בעמודה 2
     // פורמט ישן: סכום בעמודה 2
