@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, TrendingUp, Receipt, Pencil } from 'lucide-react';
+import { Trash2, TrendingUp, Receipt, Pencil } from 'lucide-react';
 import api from '../api/client';
 
 const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
@@ -40,6 +40,7 @@ export default function Incomes() {
     <div className="page">
       <div className="page-header">
         <h2>הכנסות</h2>
+        <button className="btn-fab" onClick={() => { setEditItem(null); setShowModal(true); }}>+ הוסף</button>
         <div className="month-selector">
           <select value={month} onChange={e => setMonth(+e.target.value)}>
             {MONTHS_HE.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
@@ -148,10 +149,6 @@ export default function Incomes() {
           );
         })}
       </div>
-
-      <button className="fab" onClick={() => { setEditItem(null); setShowModal(true); }}>
-        <Plus size={24} />
-      </button>
 
       {showModal && (
         <IncomeModal
