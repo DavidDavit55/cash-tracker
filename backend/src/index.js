@@ -14,6 +14,8 @@ import categoriesRoutes from './routes/categories.js';
 import budgetsRoutes from './routes/budgets.js';
 import importRoutes from './routes/import.js';
 import incomesRoutes from './routes/incomes.js';
+import whatsappRoutes from './routes/whatsapp.js';
+import { initWhatsApp } from './services/whatsapp.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -29,6 +31,7 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/budgets', budgetsRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/incomes', incomesRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
@@ -39,7 +42,10 @@ async function initDB() {
 }
 
 initDB()
-  .then(() => app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`)))
+  .then(() => {
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    initWhatsApp();
+  })
   .catch(err => {
     console.error('DB init failed:', err);
     process.exit(1);
