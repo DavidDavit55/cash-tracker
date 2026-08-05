@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
   const m = month || new Date().getMonth() + 1;
   const y = year || new Date().getFullYear();
 
-  const { rows } = await pool.query(
+  const { rows: budgeted } = await pool.query(
     `SELECT b.*, c.name as category_name, c.icon, c.color,
       COALESCE((
         SELECT SUM(amount) FROM expenses
@@ -21,7 +21,25 @@ router.get('/', async (req, res) => {
      WHERE b.user_id=$1 AND b.month=$2 AND b.year=$3`,
     [req.user.id, m, y]
   );
-  res.json(rows);
+
+  // קטגוריות עם הוצאות אבל ללא תקציב מוגדר
+  const budgetedCatIds = budgeted.map(b => b.category_id);
+  const { rows: unbudgeted } = await pool.query(
+    `SELECT c.id as category_id, c.name as category_name, c.icon, c.color,
+            SUM(e.amount) as spent, 0 as amount, NULL as id,
+            $2::int as month, $3::int as year
+     FROM expenses e
+     JOIN categories c ON e.category_id = c.id
+     WHERE e.user_id=$1
+       AND EXTRACT(MONTH FROM e.expense_date)=$2
+       AND EXTRACT(YEAR FROM e.expense_date)=$3
+       ${budgetedCatIds.length ? `AND e.category_id NOT IN (${budgetedCatIds.map((_,i) => `$${i+4}`).join(',')})` : ''}
+     GROUP BY c.id, c.name, c.icon, c.color
+     ORDER BY spent DESC`,
+    [req.user.id, m, y, ...budgetedCatIds]
+  );
+
+  res.json([...budgeted, ...unbudgeted.map(r => ({ ...r, no_budget: true }))]);
 });
 
 router.post('/', async (req, res) => {

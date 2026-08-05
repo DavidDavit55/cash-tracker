@@ -121,7 +121,7 @@ export default function Budgets() {
         );
       })()}
 
-      {budgets.length === 0 ? (
+      {budgets.filter(b => !b.no_budget).length === 0 && budgets.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">🎯</div>
           <p>אין תקציבים מוגדרים לחודש זה</p>
@@ -130,6 +130,7 @@ export default function Budgets() {
       ) : (
         <div className="card">
           {budgets.map(b => {
+            if (b.no_budget) return null; // ירונדר למטה בנפרד
             const spent = parseFloat(b.spent);
             const budget = parseFloat(b.amount);
             const pct = Math.min(100, (spent / budget) * 100);
@@ -207,6 +208,33 @@ export default function Budgets() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* קטגוריות ללא תקציב */}
+      {budgets.some(b => b.no_budget) && (
+        <div className="card" style={{ marginTop: '12px' }}>
+          <div style={{ fontSize: '0.78rem', color: '#94a3b8', padding: '8px 4px 4px', fontWeight: 600 }}>
+            ללא תקציב מוגדר
+          </div>
+          {budgets.filter(b => b.no_budget).map(b => (
+            <div key={b.category_id} className="budget-card" style={{ opacity: 0.85 }}>
+              <div className="budget-header">
+                <span className="budget-cat">{b.icon} {b.category_name}</span>
+                <div className="budget-amounts">
+                  <span style={{ color: '#f59e0b', fontWeight: 700 }}>₪{parseFloat(b.spent).toFixed(0)}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginRight: '6px' }}>· אין תקציב</span>
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+                    onClick={() => { setForm({ category_id: b.category_id, amount: '' }); setShowForm(true); }}
+                  >
+                    + הגדר
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
