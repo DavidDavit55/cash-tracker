@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, Edit2, Search, AlertTriangle, X } from 'lucide-react';
+import { Trash2, Edit2, Search, AlertTriangle, X, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import AddExpenseModal from '../components/AddExpenseModal';
 import { format } from 'date-fns';
@@ -7,6 +8,7 @@ import { format } from 'date-fns';
 const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 export default function Expenses() {
+  const navigate = useNavigate();
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -77,7 +79,12 @@ export default function Expenses() {
     <div className="page">
       <div className="page-header">
         <h2>הוצאות</h2>
-        <button className="btn-fab" onClick={() => setShowAdd(true)}>+ הוסף</button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="icon-btn" onClick={() => navigate('/import')} title="ייבוא" style={{ width: 'auto', padding: '6px 10px', gap: '4px', display: 'flex', alignItems: 'center', fontSize: '0.8rem' }}>
+            <Upload size={15}/> ייבוא
+          </button>
+          <button className="btn-fab" onClick={() => setShowAdd(true)}>+ הוסף</button>
+        </div>
       </div>
 
       <div className="filters-row">

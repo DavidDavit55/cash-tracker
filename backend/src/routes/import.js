@@ -468,6 +468,59 @@ router.post('/max', upload.single('file'), async (req, res) => {
   }
 });
 
+// POST /import/discount-auto — מזהה אוטומטית עו"ש או ויזה דיסקונט
+router.post('/discount-auto', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'קובץ חסר' });
+  try {
+    const wb = XLSX.readFile(req.file.path);
+    fs.unlinkSync(req.file.path);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const firstRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, range: 0 }).slice(0, 3);
+    const topText = firstRows.map(r => (r || []).join(' ')).join(' ');
+    let result;
+    if (topText.includes('פירוט עסקאות') || topText.includes('ויזה')) {
+      const rows = parseDiscountVisa(wb);
+      if (!rows.length) return res.status(400).json({ error: 'לא נמצאו עסקאות' });
+      result = await saveRows(rows, req.user.id);
+      result.source = 'ויזה דיסקונט';
+    } else {
+      const { expenses, incomes } = parseDiscount(wb);
+      if (!expenses.length && !incomes.length) return res.status(400).json({ error: 'לא נמצאו תנועות' });
+      const expResult = await saveRows(expenses, req.user.id);
+      const incResult = await saveIncomes(incomes, req.user.id);
+      result = { imported: expResult.imported + incResult.imported, skipped: expResult.skipped + incResult.skipped, source: 'עו"ש דיסקונט' };
+    }
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: `שגיאה: ${err.message}` });
+  }
+});
+
+// POST /import/max-auto — מזהה אוטומטית transaction-details או פורמט ישן
+router.post('/max-auto', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'קובץ חסר' });
+  try {
+    const wb = XLSX.readFile(req.file.path);
+    fs.unlinkSync(req.file.path);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const firstRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }).slice(0, 5);
+    const topText = firstRows.map(r => (r || []).join(' ')).join(' ');
+    let rows;
+    if (topText.includes('4 ספרות') || topText.includes('כל הכרטיסים')) {
+      rows = parseTransactionDetails(wb);
+    } else {
+      rows = parseMax(wb);
+    }
+    if (!rows.length) return res.status(400).json({ error: 'לא נמצאו עסקאות' });
+    const result = await saveRows(rows, req.user.id);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: `שגיאה: ${err.message}` });
+  }
+});
+
 // POST /import/transaction-details (מקס - transaction-details_export)
 router.post('/transaction-details', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'קובץ חסר' });
