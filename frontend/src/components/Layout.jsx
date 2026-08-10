@@ -41,6 +41,7 @@ export default function Layout({ children }) {
       {drawerOpen && (
         <div className="drawer-overlay" onClick={() => setDrawerOpen(false)}>
           <div className="drawer" onClick={e => e.stopPropagation()}>
+            <div className="drawer-handle"></div>
             <div className="drawer-header">
               <span style={{ fontWeight: 700, fontSize: '1rem' }}>תפריט</span>
               <button className="icon-btn" onClick={() => setDrawerOpen(false)}><X size={20}/></button>

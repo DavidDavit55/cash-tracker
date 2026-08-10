@@ -431,8 +431,17 @@ body {
 .loading.full { height: 100vh; }
 
 /* DRAWER */
-.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: flex-end; }
-.drawer { background: var(--card-bg); border-radius: 20px 20px 0 0; width: 100%; padding: 16px; padding-bottom: 32px; }
-.drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 16px; border-bottom: 1px solid #f1f5f9; margin-bottom: 8px; }
-.drawer-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 8px; font-size: 1rem; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--text); border-radius: 10px; transition: background 0.15s; }
-.drawer-item:hover { background: #f8fafc; }
+.drawer-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200;
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+}
+.drawer {
+  background: var(--card); border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px; padding: 0 8px 32px;
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.drawer-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 4px; }
+.drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 12px 12px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.drawer-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 12px; font-size: 1rem; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--text); border-radius: 10px; transition: background 0.15s; }
+.drawer-item:hover { background: var(--bg); }
