@@ -239,6 +239,70 @@ function parseMax(wb) {
   return result;
 }
 
+// transaction-details_export (MAX / כרטיסי אשראי מקס) - עמודת "4 ספרות אחרונות"
+function parseTransactionDetails(wb) {
+  const result = [];
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    let headerRow = -1;
+    for (let i = 0; i < rows.length; i++) {
+      const cell = String(rows[i]?.[0] || '');
+      if (cell.includes('תאריך')) { headerRow = i; break; }
+    }
+    if (headerRow === -1) continue;
+    for (let i = headerRow + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !row[0]) continue;
+      const amount = parseFloat(row[5]);
+      if (isNaN(amount) || amount <= 0) continue;
+      const merchant = String(row[1] || '').trim();
+      if (!merchant) continue;
+      const cardNumber = row[3] ? String(row[3]).trim() : null;
+      result.push({
+        expense_date: excelDateToJS(row[0]),
+        merchant,
+        amount,
+        description: `מקס - ${row[4] || 'רכישה'}`,
+        riseup_category: String(row[2] || '').trim() || null,
+        payment_method: 'מקס כרטיס אשראי',
+        card_number: cardNumber,
+      });
+    }
+  }
+  return result;
+}
+
+// פירוט עסקאות וזיכויים - ויזה דיסקונט
+function parseDiscountVisa(wb) {
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+  // כותרת בשורה 1 (index 1): תאריך עסקה, שם בית עסק, סכום, כרטיס, ...
+  const headerRow = 1;
+  const result = [];
+  for (let i = headerRow + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row[0]) continue;
+    const amount = parseFloat(row[2]);
+    if (isNaN(amount) || amount <= 0) continue;
+    const merchant = String(row[1] || '').trim();
+    if (!merchant) continue;
+    // כרטיס: "ויזה 0508" → card_number = "0508"
+    const cardRaw = String(row[3] || '');
+    const cardMatch = cardRaw.match(/(\d{4})\s*$/);
+    result.push({
+      expense_date: excelDateToJS(row[0]),
+      merchant,
+      amount,
+      description: `ויזה דיסקונט - ${row[5] || 'רכישה'}`,
+      riseup_category: null,
+      payment_method: 'ויזה דיסקונט',
+      card_number: cardMatch ? cardMatch[1] : null,
+    });
+  }
+  return result;
+}
+
 function parseRiseUpCSV(content) {
   const lines = content.split('\n').filter(l => l.trim());
   if (lines.length < 2) return [];
@@ -395,6 +459,38 @@ router.post('/max', upload.single('file'), async (req, res) => {
     const wb = XLSX.readFile(req.file.path);
     fs.unlinkSync(req.file.path);
     const rows = parseMax(wb);
+    if (!rows.length) return res.status(400).json({ error: 'לא נמצאו הוצאות' });
+    const result = await saveRows(rows, req.user.id);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאה בייבוא' });
+  }
+});
+
+// POST /import/transaction-details (מקס - transaction-details_export)
+router.post('/transaction-details', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'קובץ חסר' });
+  try {
+    const wb = XLSX.readFile(req.file.path);
+    fs.unlinkSync(req.file.path);
+    const rows = parseTransactionDetails(wb);
+    if (!rows.length) return res.status(400).json({ error: 'לא נמצאו הוצאות' });
+    const result = await saveRows(rows, req.user.id);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאה בייבוא' });
+  }
+});
+
+// POST /import/discount-visa (ויזה דיסקונט - פירוט עסקאות וזיכויים)
+router.post('/discount-visa', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'קובץ חסר' });
+  try {
+    const wb = XLSX.readFile(req.file.path);
+    fs.unlinkSync(req.file.path);
+    const rows = parseDiscountVisa(wb);
     if (!rows.length) return res.status(400).json({ error: 'לא נמצאו הוצאות' });
     const result = await saveRows(rows, req.user.id);
     res.json(result);
