@@ -173,8 +173,8 @@ function parseCal(wb) {
     const categoryCol = amountCol === 5 ? 2 : null;
 
     // נסה לחלץ 4 ספרות אחרונות של כרטיס משם הגיליון
-    const cardMatch = sheetName.match(/(\d{4})\s*$/);
-    const cardNumber = cardMatch ? cardMatch[1] : null;
+    const sheetCardMatch = sheetName.match(/(\d{4})\s*$/);
+    const sheetCardNumber = sheetCardMatch ? sheetCardMatch[1] : null;
 
     for (let i = headerRow + 1; i < rows.length; i++) {
       const row = rows[i];
@@ -183,6 +183,12 @@ function parseCal(wb) {
       if (isNaN(amount) || amount <= 0) continue;
       const merchantName = String(row[1] || '').trim();
       if (merchantName.includes('יתרת אשראי מתגלגל') || merchantName.includes('יתרת עסקות מצטברת')) continue;
+
+      // נסה לשלוף מספר כרטיס מעמודה 3 (למשל "ויזה 0508" או "0508")
+      const col3 = String(row[3] || '');
+      const rowCardMatch = col3.match(/(\d{4})\s*$/) || col3.match(/\b(\d{4})\b/);
+      const cardNumber = sheetCardNumber || (rowCardMatch ? rowCardMatch[1] : null);
+
       result.push({
         expense_date: excelDateToJS(row[0]),
         merchant: merchantName,
