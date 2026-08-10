@@ -429,3 +429,10 @@ body {
 /* LOADING */
 .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--text-muted); font-size: 0.95rem; }
 .loading.full { height: 100vh; }
+
+/* DRAWER */
+.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: flex-end; }
+.drawer { background: var(--card-bg); border-radius: 20px 20px 0 0; width: 100%; padding: 16px; padding-bottom: 32px; }
+.drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 16px; border-bottom: 1px solid #f1f5f9; margin-bottom: 8px; }
+.drawer-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 8px; font-size: 1rem; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--text); border-radius: 10px; transition: background 0.15s; }
+.drawer-item:hover { background: #f8fafc; }
