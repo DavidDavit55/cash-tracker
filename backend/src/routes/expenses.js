@@ -101,7 +101,7 @@ router.get('/potential-duplicates', async (req, res) => {
 
 // GET /expenses
 router.get('/', async (req, res) => {
-  const { month, year, category_id, limit = 50, offset = 0 } = req.query;
+  const { month, year, category_id, no_category, limit = 50, offset = 0 } = req.query;
   let query = `
     SELECT e.*, c.name as category_name, c.icon as category_icon, c.color as category_color
     FROM expenses e
@@ -117,6 +117,8 @@ router.get('/', async (req, res) => {
   if (category_id) {
     params.push(category_id);
     query += ` AND e.category_id = $${params.length}`;
+  } else if (no_category) {
+    query += ` AND e.category_id IS NULL`;
   }
 
   query += ` ORDER BY e.expense_date DESC, e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -270,10 +272,23 @@ router.get('/stats/summary', async (req, res) => {
 
   try {
     const { rows: byCategory } = await pool.query(
-      `SELECT c.id, c.name, c.icon, c.color, SUM(e.amount) as total, COUNT(*) as count
-       FROM expenses e LEFT JOIN categories c ON e.category_id = c.id
-       WHERE e.user_id=$1 AND EXTRACT(MONTH FROM e.expense_date)=$2 AND EXTRACT(YEAR FROM e.expense_date)=$3
+      `SELECT c.id, c.name, c.icon, c.color,
+              COALESCE(SUM(e.amount), 0) as total, COALESCE(COUNT(e.id), 0) as count
+       FROM categories c
+       LEFT JOIN expenses e ON e.category_id = c.id
+         AND e.user_id=$1
+         AND EXTRACT(MONTH FROM e.expense_date)=$2
+         AND EXTRACT(YEAR FROM e.expense_date)=$3
+       WHERE c.user_id=$1
        GROUP BY c.id, c.name, c.icon, c.color ORDER BY total DESC`,
+      [req.user.id, m, y]
+    );
+
+    const { rows: uncategorized } = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) as total, COALESCE(COUNT(*), 0) as count
+       FROM expenses
+       WHERE user_id=$1 AND category_id IS NULL
+         AND EXTRACT(MONTH FROM expense_date)=$2 AND EXTRACT(YEAR FROM expense_date)=$3`,
       [req.user.id, m, y]
     );
 
@@ -290,7 +305,7 @@ router.get('/stats/summary', async (req, res) => {
       [req.user.id, m, y]
     );
 
-    res.json({ byCategory, monthly, total: total[0] });
+    res.json({ byCategory, monthly, total: total[0], uncategorized: uncategorized[0] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'שגיאת שרת' });

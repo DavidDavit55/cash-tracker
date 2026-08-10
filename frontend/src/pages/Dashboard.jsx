@@ -30,7 +30,7 @@ export default function Dashboard() {
     setExpandedCat(cat.name);
     if (!catExpenses[cat.name]) {
       const params = `month=${month}&year=${year}&limit=50`;
-      const catParam = cat.id ? `&category_id=${cat.id}` : '';
+      const catParam = cat.id ? `&category_id=${cat.id}` : '&no_category=1';
       const { data } = await api.get(`/expenses?${params}${catParam}`);
       setCatExpenses(prev => ({ ...prev, [cat.name]: data }));
     }
@@ -42,9 +42,23 @@ export default function Dashboard() {
   const totalIncome = parseFloat(incomeStats?.total?.total || 0);
   const cashflow = totalIncome - totalSpent;
 
+  // מיזוג קטגוריות עם תקציבים
+  const budgetMap = Object.fromEntries(budgets.map(b => [b.category_id, b]));
   const categoryData = stats.byCategory
-    .map(c => ({ id: c.id, name: c.name, total: parseFloat(c.total), color: c.color || '#6366f1', icon: c.icon }))
+    .map(c => {
+      const b = budgetMap[c.id];
+      return {
+        id: c.id, name: c.name, total: parseFloat(c.total),
+        color: c.color || '#6366f1', icon: c.icon,
+        budget: b ? parseFloat(b.amount) : null,
+      };
+    })
     .sort((a, b) => b.total - a.total);
+
+  const uncatTotal = parseFloat(stats.uncategorized?.total || 0);
+  if (uncatTotal > 0) {
+    categoryData.push({ id: null, name: 'ללא קטגוריה', total: uncatTotal, color: '#94a3b8', icon: '❓', budget: null });
+  }
 
   return (
     <div className="page">
@@ -71,43 +85,51 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* פילוח לפי קטגוריה — accordion */}
+      {/* קטגוריות + תקציב — accordion מאוחד */}
       {categoryData.length > 0 && (
         <div className="chart-card" style={{ padding: '14px 0' }}>
-          <h3 style={{ padding: '0 16px 10px' }}>פילוח לפי קטגוריה</h3>
+          <h3 style={{ padding: '0 16px 10px' }}>הוצאות לפי קטגוריה</h3>
           {categoryData.map((cat, i) => {
-            const pct = (cat.total / categoryData[0].total) * 100;
+            const maxTotal = categoryData[0].total || 1;
+            const hasBudget = cat.budget !== null;
+            const over = hasBudget && cat.total > cat.budget;
+            const barPct = hasBudget
+              ? Math.min(100, (cat.total / cat.budget) * 100)
+              : (cat.total / maxTotal) * 100;
+            const barColor = over ? '#ef4444' : cat.color;
             const isOpen = expandedCat === cat.name;
             const expenses = catExpenses[cat.name] || [];
             return (
               <div key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <button
-                  onClick={() => toggleCat(cat)}
-                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 16px', textAlign: 'right' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '0.84rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {isOpen ? <ChevronUp size={14} color="#94a3b8"/> : <ChevronDown size={14} color="#94a3b8"/>}
+                <button onClick={() => toggleCat(cat)}
+                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 16px', textAlign: 'right' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '0.84rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8' }}>
+                      {isOpen ? <ChevronUp size={13}/> : <ChevronDown size={13}/>}
                     </div>
-                    <span style={{ fontWeight: 500 }}>{cat.icon} {cat.name}</span>
-                    <span style={{ fontWeight: 700, color: cat.color }}>₪{cat.total.toLocaleString('he-IL', { maximumFractionDigits: 0 })}</span>
+                    <span style={{ fontWeight: 500, flex: 1, textAlign: 'right', margin: '0 6px' }}>{cat.icon} {cat.name}</span>
+                    <span style={{ fontWeight: 700, color: over ? '#ef4444' : cat.color, whiteSpace: 'nowrap' }}>
+                      ₪{cat.total.toLocaleString('he-IL', { maximumFractionDigits: 0 })}
+                      {hasBudget && <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '0.78rem' }}> / ₪{cat.budget.toLocaleString('he-IL', { maximumFractionDigits: 0 })}</span>}
+                    </span>
                   </div>
                   <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: cat.color, borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                    <div style={{ height: '100%', width: `${barPct}%`, background: barColor, borderRadius: '3px', transition: 'width 0.5s ease' }} />
                   </div>
                 </button>
 
                 {isOpen && (
                   <div style={{ background: '#f8fafc', paddingBottom: '4px' }}>
                     {expenses.length === 0 ? (
-                      <div style={{ padding: '12px 16px', fontSize: '0.8rem', color: '#94a3b8' }}>טוען...</div>
+                      <div style={{ padding: '12px 16px', fontSize: '0.8rem', color: '#94a3b8' }}>
+                        {cat.total === 0 ? 'אין הוצאות החודש' : 'טוען...'}
+                      </div>
                     ) : expenses.map((exp, j) => (
                       <div key={j} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderTop: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
                         <div>
                           <div style={{ fontWeight: 600 }}>{exp.merchant || exp.description}</div>
-                          <div style={{ color: '#94a3b8', marginTop: '2px' }}>
-                            {exp.payment_method || ''}
-                            {exp.card_number ? ` •••• ${exp.card_number}` : ''}
+                          <div style={{ color: '#94a3b8', marginTop: '2px', fontSize: '0.75rem' }}>
+                            {exp.payment_method || ''}{exp.card_number ? ` •••• ${exp.card_number}` : ''}
                           </div>
                         </div>
                         <div style={{ textAlign: 'left' }}>
@@ -136,28 +158,6 @@ export default function Dashboard() {
               <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* תקציבים */}
-      {budgets.length > 0 && (
-        <div className="card">
-          <h3 style={{ padding: '14px 16px 0' }}>תקציבים</h3>
-          {budgets.map(b => {
-            const pct = Math.min(100, (parseFloat(b.spent) / parseFloat(b.amount)) * 100);
-            const over = parseFloat(b.spent) > parseFloat(b.amount);
-            return (
-              <div key={b.id} className="budget-row" style={{ padding: '10px 16px' }}>
-                <div className="budget-info">
-                  <span>{b.icon} {b.category_name}</span>
-                  <span className={over ? 'over-budget' : ''}>₪{parseFloat(b.spent).toFixed(0)} / ₪{parseFloat(b.amount).toFixed(0)}</span>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${pct}%`, background: over ? '#ef4444' : b.color }} />
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
     </div>
