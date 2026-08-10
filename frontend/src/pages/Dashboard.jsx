@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useState, useEffect, useCallback } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 
@@ -10,6 +11,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [incomeStats, setIncomeStats] = useState(null);
   const [budgets, setBudgets] = useState([]);
+  const [expandedCat, setExpandedCat] = useState(null);
+  const [catExpenses, setCatExpenses] = useState({});
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -18,7 +21,20 @@ export default function Dashboard() {
     api.get(`/expenses/stats/summary?month=${month}&year=${year}`).then(r => setStats(r.data));
     api.get(`/incomes/stats/summary?month=${month}&year=${year}`).then(r => setIncomeStats(r.data));
     api.get(`/budgets?month=${month}&year=${year}`).then(r => setBudgets(r.data));
+    setExpandedCat(null);
+    setCatExpenses({});
   }, [month, year]);
+
+  const toggleCat = useCallback(async (cat) => {
+    if (expandedCat === cat.name) { setExpandedCat(null); return; }
+    setExpandedCat(cat.name);
+    if (!catExpenses[cat.name]) {
+      const params = `month=${month}&year=${year}&limit=50`;
+      const catParam = cat.id ? `&category_id=${cat.id}` : '';
+      const { data } = await api.get(`/expenses?${params}${catParam}`);
+      setCatExpenses(prev => ({ ...prev, [cat.name]: data }));
+    }
+  }, [expandedCat, catExpenses, month, year]);
 
   if (!stats) return <div className="loading">טוען...</div>;
 
@@ -27,7 +43,7 @@ export default function Dashboard() {
   const cashflow = totalIncome - totalSpent;
 
   const categoryData = stats.byCategory
-    .map(c => ({ name: c.name, total: parseFloat(c.total), color: c.color || '#6366f1', icon: c.icon }))
+    .map(c => ({ id: c.id, name: c.name, total: parseFloat(c.total), color: c.color || '#6366f1', icon: c.icon }))
     .sort((a, b) => b.total - a.total);
 
   return (
@@ -55,26 +71,56 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* פילוח לפי קטגוריה — CSS bars */}
+      {/* פילוח לפי קטגוריה — accordion */}
       {categoryData.length > 0 && (
-        <div className="chart-card">
-          <h3>פילוח לפי קטגוריה</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
-            {categoryData.map((cat, i) => {
-              const pct = (cat.total / categoryData[0].total) * 100;
-              return (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.82rem' }}>
+        <div className="chart-card" style={{ padding: '14px 0' }}>
+          <h3 style={{ padding: '0 16px 10px' }}>פילוח לפי קטגוריה</h3>
+          {categoryData.map((cat, i) => {
+            const pct = (cat.total / categoryData[0].total) * 100;
+            const isOpen = expandedCat === cat.name;
+            const expenses = catExpenses[cat.name] || [];
+            return (
+              <div key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <button
+                  onClick={() => toggleCat(cat)}
+                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 16px', textAlign: 'right' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '0.84rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {isOpen ? <ChevronUp size={14} color="#94a3b8"/> : <ChevronDown size={14} color="#94a3b8"/>}
+                    </div>
                     <span style={{ fontWeight: 500 }}>{cat.icon} {cat.name}</span>
                     <span style={{ fontWeight: 700, color: cat.color }}>₪{cat.total.toLocaleString('he-IL', { maximumFractionDigits: 0 })}</span>
                   </div>
-                  <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: cat.color, borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                  <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: cat.color, borderRadius: '3px', transition: 'width 0.5s ease' }} />
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                </button>
+
+                {isOpen && (
+                  <div style={{ background: '#f8fafc', paddingBottom: '4px' }}>
+                    {expenses.length === 0 ? (
+                      <div style={{ padding: '12px 16px', fontSize: '0.8rem', color: '#94a3b8' }}>טוען...</div>
+                    ) : expenses.map((exp, j) => (
+                      <div key={j} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderTop: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{exp.merchant || exp.description}</div>
+                          <div style={{ color: '#94a3b8', marginTop: '2px' }}>
+                            {exp.payment_method || ''}
+                            {exp.card_number ? ` •••• ${exp.card_number}` : ''}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'left' }}>
+                          <div style={{ fontWeight: 700, color: '#ef4444' }}>₪{parseFloat(exp.amount).toLocaleString('he-IL', { maximumFractionDigits: 0 })}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{new Date(exp.expense_date).toLocaleDateString('he-IL')}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

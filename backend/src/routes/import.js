@@ -135,6 +135,8 @@ function parseDiscount(wb) {
         amount: Math.abs(amount),
         description: 'עו"ש דיסקונט',
         riseup_category: null,
+        payment_method: 'בנק דיסקונט',
+        card_number: null,
       });
     } else {
       // דלג על תנועות שאינן הכנסה אמיתית
@@ -167,9 +169,12 @@ function parseCal(wb) {
     }
     if (headerRow === -1) continue;
     const header = rows[headerRow];
-    // זהה פורמט: סכום בעמודה 2 (כאל ישן) או עמודה 5 (כאל חדש/מקס)
     const amountCol = String(header[2] || '').includes('סכום') ? 2 : 5;
     const categoryCol = amountCol === 5 ? 2 : null;
+
+    // נסה לחלץ 4 ספרות אחרונות של כרטיס משם הגיליון
+    const cardMatch = sheetName.match(/(\d{4})\s*$/);
+    const cardNumber = cardMatch ? cardMatch[1] : null;
 
     for (let i = headerRow + 1; i < rows.length; i++) {
       const row = rows[i];
@@ -180,10 +185,12 @@ function parseCal(wb) {
       if (merchantName.includes('יתרת אשראי מתגלגל') || merchantName.includes('יתרת עסקות מצטברת')) continue;
       result.push({
         expense_date: excelDateToJS(row[0]),
-        merchant: String(row[1] || '').trim(),
+        merchant: merchantName,
         amount,
         description: `כאל - ${sheetName}`,
         riseup_category: categoryCol !== null ? String(row[categoryCol] || '').trim() : null,
+        payment_method: 'כאל כרטיס אשראי',
+        card_number: cardNumber,
       });
     }
   }
@@ -193,24 +200,29 @@ function parseCal(wb) {
 function parseMax(wb) {
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-  // שורה 2 = כותרות (index 1)
   let headerRow = -1;
   for (let i = 0; i < rows.length; i++) {
     const cell = rows[i]?.[0];
     if (cell && String(cell).includes('תאריך')) { headerRow = i; break; }
   }
   if (headerRow === -1) return [];
+
+  // נסה לחלץ מספר כרטיס מהשורות שלפני הכותרת
+  let cardNumber = null;
+  for (let i = 0; i < headerRow; i++) {
+    const rowText = (rows[i] || []).join(' ');
+    const m = rowText.match(/\b(\d{4})\b/);
+    if (m) { cardNumber = m[1]; break; }
+  }
+
   const result = [];
   for (let i = headerRow + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || !row[0]) continue;
-    // סנן אשראי מתגלגל
     const merchant = String(row[1] || '').trim();
     const txType = String(row[4] || '').trim();
     if (merchant.includes('יתרת עסקות מצטברת') || merchant.includes('יתרת אשראי מתגלגל') || txType.includes('העברה לסל מצטבר')) continue;
 
-    // פורמט חדש: סכום בעמודה 5, קטגוריה בעמודה 2
-    // פורמט ישן: סכום בעמודה 2
     const amount = parseFloat(row[5]) || parseFloat(row[2]);
     if (isNaN(amount) || amount <= 0) continue;
     const category = String(row[2] || '').trim();
@@ -220,6 +232,8 @@ function parseMax(wb) {
       amount,
       description: `מקס - ${row[4] || 'רכישה'}`,
       riseup_category: isNaN(parseFloat(row[2])) ? category : null,
+      payment_method: 'מקס כרטיס אשראי',
+      card_number: cardNumber,
     });
   }
   return result;
@@ -309,9 +323,10 @@ async function saveRows(rows, userId) {
     if (existing.length > 0) { skipped++; continue; }
 
     await pool.query(
-      `INSERT INTO expenses (user_id, category_id, amount, merchant, description, expense_date)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [userId, categoryId, row.amount, row.merchant, row.description, row.expense_date]
+      `INSERT INTO expenses (user_id, category_id, amount, merchant, description, expense_date, payment_method, card_number)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [userId, categoryId, row.amount, row.merchant, row.description, row.expense_date,
+       row.payment_method || 'לא צוין', row.card_number || null]
     );
     imported++;
   }

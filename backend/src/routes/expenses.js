@@ -270,7 +270,7 @@ router.get('/stats/summary', async (req, res) => {
 
   try {
     const { rows: byCategory } = await pool.query(
-      `SELECT c.name, c.icon, c.color, SUM(e.amount) as total, COUNT(*) as count
+      `SELECT c.id, c.name, c.icon, c.color, SUM(e.amount) as total, COUNT(*) as count
        FROM expenses e LEFT JOIN categories c ON e.category_id = c.id
        WHERE e.user_id=$1 AND EXTRACT(MONTH FROM e.expense_date)=$2 AND EXTRACT(YEAR FROM e.expense_date)=$3
        GROUP BY c.id, c.name, c.icon, c.color ORDER BY total DESC`,
