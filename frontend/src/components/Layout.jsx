@@ -17,7 +17,7 @@ export default function Layout({ children }) {
           <img src="/logo.png" alt="לוגו" style={{ height: '32px', objectFit: 'contain' }} />
           <span className="app-title">ניהול משק בית</span>
         </div>
-        <button className="icon-btn" onClick={logout} title="התנתק"><LogOut size={18}/></button>
+        <button className="icon-btn" onClick={() => setDrawerOpen(true)} title="תפריט"><Menu size={22}/></button>
       </header>
 
       <main className="app-main">{children}</main>
@@ -35,10 +35,6 @@ export default function Layout({ children }) {
           <Receipt size={22}/>
           <span>הוצאות</span>
         </NavLink>
-        <button className="nav-item" onClick={() => setDrawerOpen(true)}>
-          <Menu size={22}/>
-          <span>עוד</span>
-        </button>
       </nav>
 
       {/* Drawer */}
