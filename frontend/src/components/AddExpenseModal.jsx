@@ -133,7 +133,17 @@ export default function AddExpenseModal({ categories, editItem, onClose, onSaved
           </div>
           <div className="form-group">
             <label>שם העסק</label>
-            <input value={form.merchant} onChange={e => setForm(p => ({ ...p, merchant: e.target.value }))} placeholder="סופרמרקט, מסעדה..." />
+            <input
+              value={form.merchant}
+              onChange={e => setForm(p => ({ ...p, merchant: e.target.value }))}
+              onBlur={async e => {
+                const m = e.target.value.trim();
+                if (!m || form.category_id) return;
+                const { data } = await api.get(`/expenses/merchant-category?merchant=${encodeURIComponent(m)}`);
+                if (data.category_id) setForm(p => ({ ...p, category_id: data.category_id }));
+              }}
+              placeholder="סופרמרקט, מסעדה..."
+            />
           </div>
           <div className="form-group">
             <label>תיאור</label>

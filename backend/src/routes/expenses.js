@@ -99,6 +99,17 @@ router.get('/potential-duplicates', async (req, res) => {
   res.json(rows);
 });
 
+// GET /expenses/merchant-category?merchant=X
+router.get('/merchant-category', async (req, res) => {
+  const { merchant } = req.query;
+  if (!merchant) return res.json({});
+  const { rows } = await pool.query(
+    'SELECT category_id FROM merchant_categories WHERE user_id=$1 AND merchant=$2 LIMIT 1',
+    [req.user.id, merchant]
+  );
+  res.json(rows[0] || {});
+});
+
 // GET /expenses
 router.get('/', async (req, res) => {
   const { month, year, category_id, no_category, limit = 50, offset = 0 } = req.query;
