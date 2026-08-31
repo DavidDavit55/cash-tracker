@@ -179,7 +179,12 @@ function IncomeModal({ editItem, onClose, onSaved }) {
   const vatPreview = net ? gross - net : null;
 
   const handleSourceChange = (source) => {
-    setForm(p => ({ ...p, source, includes_vat: source === 'עמלות ביטוח' }));
+    setForm(p => ({
+      ...p,
+      source,
+      includes_vat: source === 'עמלות ביטוח',
+      ...(source === 'משלוחים' ? { payment_method: 'מזומן', includes_vat: false } : {}),
+    }));
   };
 
   const submit = async e => {
