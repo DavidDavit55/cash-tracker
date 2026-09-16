@@ -65,7 +65,11 @@ export function parseHarBituach(arrayBuffer) {
 function guessType(text) {
   if (!text) return 'other';
   if (text.includes('מנהלים') || text.includes('פנסי') || text.includes('קצבה')) return 'managers';
+  if (text.includes('אובדן כושר') || text.includes('אכ"ע') || text.includes('אכע')) return 'disability';
   if (text.includes('בריאות')) return 'health';
+  if (text.includes('רכב')) return 'car';
+  if (text.includes('דירה') || text.includes('מבנה') || text.includes('תכולה')) return 'home';
+  if (text.includes('עסק')) return 'business';
   if (text.includes('חיים')) return 'life';
   if (text.includes('תאונות')) return 'accident';
   if (text.includes('ריסק')) return 'life';

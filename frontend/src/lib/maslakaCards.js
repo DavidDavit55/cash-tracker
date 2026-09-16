@@ -52,10 +52,11 @@ function mapPensionItemToCard(item, kind) {
 
 function guessInsuranceType(label) {
   if (!label) return 'other';
+  if (label.includes('אובדן כושר') || label.includes('אכ"ע') || label.includes('אכע')) return 'disability';
   if (label.includes('בריאות')) return 'health';
-  if (label.includes('חיים')) return 'life';
   if (label.includes('מנהלים')) return 'managers';
   if (label.includes('תאונות')) return 'accident';
+  if (label.includes('חיים')) return 'life';
   if (label.includes('ריסק')) return 'life';
   return 'other';
 }

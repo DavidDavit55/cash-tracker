@@ -112,7 +112,9 @@ export default function Pension() {
     const deal = getBestDealForFund(p);
     return s + (deal?.feeFromAccumulation ?? p.feeFromAccumulation ?? 0) * p.balance;
   }, 0) / total;
-  const feeDiff = weightedFee - weightedBestFee;
+  // מעוגל לפני ההשוואה - הפרש כמו 0.0001% (רעש נקודה צפה מהחישוב המשוקלל) לא נחשב שיפור אמיתי,
+  // ובלי זה הקארד היה מציג "אתה משלם 0.00% יותר" - כלומר אין שום שיפור, אבל בכל זאת מציג קארד.
+  const feeDiff = Math.round((weightedFee - weightedBestFee) * 100) / 100;
 
   return (
     <div className="page">
