@@ -70,20 +70,36 @@ function guessType(text) {
   return 'other';
 }
 
-export function mapHarBituachRowToCard(row) {
-  const premiumNum = parseFloat(row.premium) || null;
-  const monthlyPremium = premiumNum && row.premiumType && row.premiumType.includes('שנתי')
-    ? Math.round(premiumNum / 12)
-    : premiumNum;
-  return {
-    id: row.policyNum || `harbituach-${row.company}-${row.product}`,
-    type: guessType(`${row.section} ${row.branch} ${row.product}`),
-    name: row.product || row.branch,
-    provider: row.company,
-    monthlyPremium,
-    coverage: null,
-    coverageItems: [row.classification, row.notes, row.subBranch].filter(Boolean).length
-      ? [row.classification, row.notes, row.subBranch].filter(Boolean)
-      : ['מקור: הר הביטוח'],
-  };
+function monthlyOf(row) {
+  const premiumNum = parseFloat(row.premium) || 0;
+  return row.premiumType && row.premiumType.includes('שנתי') ? premiumNum / 12 : premiumNum;
+}
+
+// שורה בקובץ = כיסוי בודד, לא פוליסה - כמה שורות עם אותו מספר פוליסה שייכות לאותה פוליסה בפועל.
+// מקבצים לפי מספר פוליסה: כרטיס אחד לפוליסה, פרמיה כוללת, וכל הכיסויים בפירוט (נפתח בחץ).
+export function groupHarBituachByPolicy(rows) {
+  const byPolicy = new Map();
+  for (const row of rows) {
+    const key = row.policyNum || `${row.company}-${row.product}`;
+    if (!byPolicy.has(key)) byPolicy.set(key, []);
+    byPolicy.get(key).push(row);
+  }
+
+  return Array.from(byPolicy.entries()).map(([policyNum, policyRows]) => {
+    const first = policyRows[0];
+    const monthlyPremium = Math.round(policyRows.reduce((s, r) => s + monthlyOf(r), 0));
+    return {
+      id: policyNum,
+      type: guessType(`${first.section} ${first.branch} ${first.product}`),
+      name: first.branch || first.product,
+      provider: first.company,
+      monthlyPremium,
+      coverage: null,
+      coverageItems: policyRows.map(r => {
+        const label = [r.subBranch, r.product].filter(Boolean).join(' - ') || 'כיסוי';
+        const amount = parseFloat(r.premium) ? `₪${r.premium}${r.premiumType ? ` (${r.premiumType})` : ''}` : '';
+        return amount ? `${label} — ${amount}` : label;
+      }),
+    };
+  });
 }

@@ -155,7 +155,7 @@ function extractPension(root, result) {
 
 function extractStudyFund(root, result) {
   const companyKgm = getVal(root, 'SHEM-YATZRAN');
-  const SUG_LABELS = { '3': 'קרן השתלמות', '4': 'קופת גמל', '9': 'גמל להשקעה' };
+  const SUG_LABELS = { '3': 'קרן השתלמות', '4': 'קופת גמל', '9': 'גמל להשקעה', '10': 'חיסכון לכל ילד' };
 
   for (const mutzar of allDescendants(root, 'Mutzar')) {
     const nm = directChild(mutzar, 'NetuneiMutzar');
@@ -180,14 +180,17 @@ function extractStudyFund(root, result) {
       }
       const dnH = dnHMivne || getVal(heshbon, 'MEMOTZA-SHEUR-DMEI-NIHUL-HAFKADA') || getVal(heshbon, 'SHEUR-DMEI-NIHUL-HAFKADA');
 
-      let oved = 0, maavid = 0;
+      // oved/maavid רק לתצוגה - קודי הפרשה נוספים קיימים (למשל 12 = הפקדת מדינה ב"חיסכון לכל ילד")
+      // שלא שייכים לאף צד, ולכן היתרה הכוללת נספרת מכל הקודים ולא רק משני האלה.
+      let oved = 0, maavid = 0, allYitrot = 0;
       for (const py of allDescendants(heshbon, 'PerutYitrot')) {
         const sugH = directChildText(py, 'KOD-SUG-HAFRASHA');
         const amt = parseFloat(directChildText(py, 'TOTAL-CHISACHON-MTZBR')) || 0;
+        allYitrot += amt;
         if (sugH === '1' || sugH === '8') oved += amt;
         else if (sugH === '2' || sugH === '9') maavid += amt;
       }
-      let tzviraVal = oved + maavid;
+      let tzviraVal = allYitrot;
       let tzvira = tzviraVal > 0 ? String(round2(tzviraVal)) : (getVal(heshbon, 'TZVIRAT-CHISACHON-CHAZUYA-LELO-PREMIYOT') || '');
       tzviraVal = parseFloat(tzvira) || 0;
 

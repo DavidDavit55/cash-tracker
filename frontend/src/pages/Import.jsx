@@ -5,7 +5,7 @@ import api from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import JSZip from 'jszip';
 import { parseMaslakaFiles } from '../lib/maslakaParser';
-import { parseHarBituach, mapHarBituachRowToCard } from '../lib/harBituachParser';
+import { parseHarBituach, groupHarBituachByPolicy } from '../lib/harBituachParser';
 import { fmt } from '../components/ProductCard';
 
 function mapPensionItemToCard(item, kind) {
@@ -140,7 +140,7 @@ function MaslakaImportSection() {
         const client = clients?.find(c => c.id_number === tz);
         if (!client) { unmatched++; return; }
         matched++;
-        const cards = tzRows.map(mapHarBituachRowToCard);
+        const cards = groupHarBituachByPolicy(tzRows);
         await api.put(`/admin/clients/${client.id}/financial-data`, { harBituachData: cards });
       }));
 

@@ -51,7 +51,7 @@ function PensionFundCard({ f, borderBottom }) {
                 🟢 נתוני שוק אמיתיים מבוססים על: <b>{real.fundName}</b> (דוח {String(real.reportPeriod).slice(0,4)}-{String(real.reportPeriod).slice(4)}) — התאמה לפי שם החברה בלבד, ייתכן שאינה הקרן המדויקת של הלקוח.
               </div>
             )}
-            <div>חשיפה למניות: <b style={{ color: 'var(--text)' }}>{stockExposure}%</b></div>
+            {stockExposure != null && <div>חשיפה למניות: <b style={{ color: 'var(--text)' }}>{stockExposure}%</b></div>}
             {real && (
               <>
                 <div>תשואה 3 שנים (שוק): <b style={{ color: 'var(--text)' }}>{real.yieldTrailing3Yrs}%</b></div>
