@@ -5,13 +5,21 @@ const PENSION_NET_RESOURCE = '6d47d6b5-cb08-488b-b333-f1e717b1e1bd';
 const GEMEL_NET_RESOURCE = 'a30dcbea-a1d2-482c-ae29-8f781f5025fb';
 
 // KOD-MASLUL-HASHKAA במסלקה מקודד בתוכו את ה-FUND_ID של הדאטהסט הממשלתי: 9 הספרות הראשונות
-// הן MANAGING_CORPORATION_LEGAL_ID, השאריות (אחרי הסרת אפסים מובילים) הן ה-FUND_ID עצמו.
-// אומת ידנית מול קובץ אמיתי (גם פנסיה וגם גמל) - כשקיים, זו התאמה מדויקת ועדיפה על ניחוש לפי שם.
-function fundIdFromKod(kod) {
+// הן MANAGING_CORPORATION_LEGAL_ID, וה-FUND_ID עצמו הוא הסיומת (לא כל מה שנשאר אחרי הקידומת -
+// יש ביניהם ספרות נוספות שאינן חלק מה-FUND_ID, ואורך ה-FUND_ID משתנה בין 4-6 ספרות). לכן בודקים
+// כמה אורכי סיומת אפשריים ומאמתים כל אחד מול ה-DB לפי FUND_ID + התאמת ה-legal id.
+function kodParts(kod) {
   const digits = String(kod || '').replace(/\D/g, '');
   if (digits.length <= 9) return null;
-  const fundId = parseInt(digits.slice(9), 10);
-  return isNaN(fundId) ? null : fundId;
+  const legalId = digits.slice(0, 9);
+  const suffixLens = [4, 5, 6, 3];
+  const fundIdCandidates = [...new Set(
+    suffixLens
+      .filter(len => len < digits.length - 9)
+      .map(len => parseInt(digits.slice(-len), 10))
+      .filter(n => !isNaN(n))
+  )];
+  return { legalId, fundIdCandidates };
 }
 
 function normalize(s) {
@@ -38,14 +46,16 @@ export async function fetchRealFundData(providerName, fundType, trackName, planN
   const resourceId = fundType === 'pension' ? PENSION_NET_RESOURCE : GEMEL_NET_RESOURCE;
 
   // התאמה מדויקת: אם יש לנו FUND_ID שחולץ מ-KOD-MASLUL-HASHKAA, מחפשים ישירות לפי מזהה
-  // ואין צורך בניחוש לפי שם בכלל.
-  const fundId = fundIdFromKod(trackCode);
-  if (fundId != null) {
-    const url = `https://data.gov.il/api/3/action/datastore_search?resource_id=${resourceId}&filters=${encodeURIComponent(JSON.stringify({ FUND_ID: fundId }))}&sort=REPORT_PERIOD desc&limit=1`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const record = data.result.records?.[0];
-    if (record) return toFundData(record, true);
+  // ואין צורך בניחוש לפי שם בכלל. מאמתים מול ה-legal id כדי לפסול התאמות מקריות.
+  const parts = kodParts(trackCode);
+  if (parts) {
+    for (const fundId of parts.fundIdCandidates) {
+      const url = `https://data.gov.il/api/3/action/datastore_search?resource_id=${resourceId}&filters=${encodeURIComponent(JSON.stringify({ FUND_ID: fundId }))}&sort=REPORT_PERIOD desc&limit=1`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const record = data.result.records?.[0];
+      if (record && String(record.MANAGING_CORPORATION_LEGAL_ID) === parts.legalId) return toFundData(record, true);
+    }
   }
 
   const records = await fetchCandidateRecords(resourceId, providerName);
