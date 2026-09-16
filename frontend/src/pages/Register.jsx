@@ -5,12 +5,20 @@ import api from '../api/client';
 import { isValidIsraeliId } from '../lib/israeliId';
 import SignaturePad from '../components/SignaturePad';
 
+// ponytail: הוסרו investment_horizon ו-life_stage - חופפים עם goals ועם מצב משפחתי (שלב 2),
+// המשתמש דיווח שזה נראה כמו אותה שאלה פעמיים.
 const QUESTIONS = [
-  { key: 'risk_tolerance', label: 'מה סיבולת הסיכון שלך?', options: ['שמרן', 'מאוזן', 'נועז'] },
-  { key: 'investment_horizon', label: 'מה אופק ההשקעה שלך?', options: ['קצר (עד 3 שנים)', 'בינוני (3-10 שנים)', 'ארוך (10+ שנים)'] },
+  {
+    key: 'risk_tolerance',
+    label: 'כשמדובר בכסף שלך - איזו גישה הכי מתארת אותך?',
+    options: [
+      'שמרן - עדיף לי יציבות, גם אם התשואה נמוכה יותר',
+      'מאוזן - מוכן לתנודות קטנות בשביל תשואה קצת יותר גבוהה',
+      'נועז - מוכן לתנודות חדות בשביל פוטנציאל תשואה גבוה',
+    ],
+  },
   { key: 'financial_knowledge', label: 'מה רמת הידע הפיננסי שלך?', options: ['מתחיל', 'בינוני', 'מתקדם'] },
   { key: 'goals', label: 'מה המטרה הפיננסית העיקרית שלך?', options: ['חיסכון לפרישה', 'רכישת דירה', 'גידול הון', 'ביטחון כלכלי'] },
-  { key: 'life_stage', label: 'מה שלב החיים שלך?', options: ['רווק/ה', 'זוג ללא ילדים', 'משפחה עם ילדים', 'לקראת פרישה'] },
 ];
 
 const MARITAL_OPTIONS = ['רווק/ה', 'נשוי/אה', 'גרוש/ה', 'אלמן/ה'];
@@ -32,9 +40,9 @@ function buildConsentText(key, name, id) {
 }
 
 const CONSENT_ITEMS = [
-  { key: 'maslaka', field: 'consent_maslaka', title: "הרשאה חד פעמית לקבלת מידע מהמסלקה הפנסיונית (נספח א')" },
-  { key: 'insurance_poa', field: 'consent_insurance_poa', title: "ייפוי כוח לקבלת מידע מחברות ביטוח (נספח ב')" },
-  { key: 'har_bituach', field: 'consent_har_bituach', title: "הרשאה לשימוש באתר הר הביטוח (נספח ה')" },
+  { key: 'maslaka', field: 'consent_maslaka', title: "הרשאה למסלקה הפנסיונית (נספח א')", short: 'מאפשרת לדוד למשוך את נתוני הפנסיה, הגמל וההשתלמות שלך.' },
+  { key: 'insurance_poa', field: 'consent_insurance_poa', title: "ייפוי כוח לחברות ביטוח (נספח ב')", short: 'מאפשר לדוד לקבל מחברות הביטוח שלך העתקי פוליסה ודוחות.' },
+  { key: 'har_bituach', field: 'consent_har_bituach', title: "הרשאה לאתר הר הביטוח (נספח ה')", short: 'מאפשרת לדוד לאתר עבורך מוצרי ביטוח באתר הממשלתי הר הביטוח.' },
 ];
 
 export default function Register() {
@@ -49,6 +57,7 @@ export default function Register() {
   const [answers, setAnswers] = useState({});
   const [consents, setConsents] = useState({ consent_maslaka: false, consent_insurance_poa: false, consent_har_bituach: false });
   const [signature, setSignature] = useState(null);
+  const [openConsent, setOpenConsent] = useState(null);
 
   const submitAccount = async e => {
     e.preventDefault();
@@ -204,12 +213,39 @@ export default function Register() {
             </p>
             {CONSENT_ITEMS.map(item => (
               <div key={item.key} style={{ background: 'var(--bg)', borderRadius: '10px', padding: '10px 12px', marginBottom: '10px' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '6px' }}>{item.title}</div>
-                <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  {buildConsentText(item.key, account.name, idInfo.id_number)}
-                </p>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '4px' }}>{item.title}</div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>{item.short}</p>
+                <button
+                  type="button"
+                  onClick={() => setOpenConsent(item.key)}
+                  style={{ fontSize: '0.76rem', color: 'var(--primary, #6366f1)', background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  קריאת הטקסט המלא
+                </button>
               </div>
             ))}
+
+            {openConsent && (
+              <div
+                onClick={() => setOpenConsent(null)}
+                style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px' }}
+              >
+                <div
+                  onClick={e => e.stopPropagation()}
+                  style={{ background: '#fff', borderRadius: '12px', padding: '18px', maxWidth: '360px', maxHeight: '70vh', overflowY: 'auto' }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: '10px' }}>
+                    {CONSENT_ITEMS.find(i => i.key === openConsent)?.title}
+                  </div>
+                  <p style={{ fontSize: '0.82rem', lineHeight: 1.7, color: 'var(--text)' }}>
+                    {buildConsentText(openConsent, account.name, idInfo.id_number)}
+                  </p>
+                  <button type="button" className="btn-primary" style={{ marginTop: '14px' }} onClick={() => setOpenConsent(null)}>
+                    סגירה
+                  </button>
+                </div>
+              </div>
+            )}
 
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: '4px 0 14px' }}>
               <input
