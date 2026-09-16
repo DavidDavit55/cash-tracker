@@ -103,14 +103,18 @@ function fixTransposedAgeDigits(name) {
 
 function tracksFromMaslulim(heshbon) {
   const amounts = {};
+  const kods = {};
   for (const node of allDescendants(heshbon, 'PerutMasluleiHashkaa')) {
     const name = fixTransposedAgeDigits(directChildText(node, 'SHEM-MASLUL-HASHKAA'));
     const amt = parseFloat(directChildText(node, 'SCHUM-TZVIRA-BAMASLUL')) || 0;
-    if (name) amounts[name] = (amounts[name] || 0) + amt;
+    if (name) {
+      amounts[name] = (amounts[name] || 0) + amt;
+      if (!kods[name]) kods[name] = directChildText(node, 'KOD-MASLUL-HASHKAA');
+    }
   }
   const total = Object.values(amounts).reduce((a, b) => a + b, 0);
   if (total > 0) {
-    return Object.entries(amounts).map(([name, amt]) => ({ name, pct: Math.round((amt / total) * 100) }));
+    return Object.entries(amounts).map(([name, amt]) => ({ name, pct: Math.round((amt / total) * 100), kod: kods[name] || '' }));
   }
   const old = directChildText(heshbon, 'SHEM-MASLUL-HABITUAH');
   return old ? [{ name: old, pct: null }] : [];

@@ -4,10 +4,16 @@
 const PENSION_NET_RESOURCE = '6d47d6b5-cb08-488b-b333-f1e717b1e1bd';
 const GEMEL_NET_RESOURCE = 'a30dcbea-a1d2-482c-ae29-8f781f5025fb';
 
-// אין קוד מסלול משותף בין המסלקה לדאטהסט הממשלתי - FUND_ID/FUND_NAME הם המזהה של הדאטהסט,
-// ואין להם מקבילה ב-XML של המסלקה. ההתאמה המדויקת ביותר האפשרית: לחפש בין כל הקרנות של אותה
-// חברה את זו ששם המסלול שלה (FUND_NAME) הכי חופף לשם המסלול שדווח במסלקה, במקום סתם לקחת
-// את התוצאה הראשונה שחוזרת לפי שם חברה בלבד.
+// KOD-MASLUL-HASHKAA במסלקה מקודד בתוכו את ה-FUND_ID של הדאטהסט הממשלתי: 9 הספרות הראשונות
+// הן MANAGING_CORPORATION_LEGAL_ID, השאריות (אחרי הסרת אפסים מובילים) הן ה-FUND_ID עצמו.
+// אומת ידנית מול קובץ אמיתי (גם פנסיה וגם גמל) - כשקיים, זו התאמה מדויקת ועדיפה על ניחוש לפי שם.
+function fundIdFromKod(kod) {
+  const digits = String(kod || '').replace(/\D/g, '');
+  if (digits.length <= 9) return null;
+  const fundId = parseInt(digits.slice(9), 10);
+  return isNaN(fundId) ? null : fundId;
+}
+
 function normalize(s) {
   return String(s || '').replace(/["'.]/g, '').replace(/\s+/g, ' ').trim();
 }
@@ -28,8 +34,20 @@ async function fetchCandidateRecords(resourceId, companyName) {
   return data.result.records || [];
 }
 
-export async function fetchRealFundData(providerName, fundType, trackName, planName) {
+export async function fetchRealFundData(providerName, fundType, trackName, planName, trackCode) {
   const resourceId = fundType === 'pension' ? PENSION_NET_RESOURCE : GEMEL_NET_RESOURCE;
+
+  // התאמה מדויקת: אם יש לנו FUND_ID שחולץ מ-KOD-MASLUL-HASHKAA, מחפשים ישירות לפי מזהה
+  // ואין צורך בניחוש לפי שם בכלל.
+  const fundId = fundIdFromKod(trackCode);
+  if (fundId != null) {
+    const url = `https://data.gov.il/api/3/action/datastore_search?resource_id=${resourceId}&filters=${encodeURIComponent(JSON.stringify({ FUND_ID: fundId }))}&sort=REPORT_PERIOD desc&limit=1`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const record = data.result.records?.[0];
+    if (record) return toFundData(record, true);
+  }
+
   const records = await fetchCandidateRecords(resourceId, providerName);
   if (!records.length) return null;
 
@@ -52,12 +70,16 @@ export async function fetchRealFundData(providerName, fundType, trackName, planN
     if (scored[0]?.score > 0) record = scored[0].r;
   }
   if (!record) return null;
+  return toFundData(record);
+}
 
+function toFundData(record, exactMatch = false) {
   return {
     fundName: record.FUND_NAME,
     stockExposurePercent: record.TOTAL_ASSETS ? Math.round((record.STOCK_MARKET_EXPOSURE / record.TOTAL_ASSETS) * 100) : null,
     yieldTrailing3Yrs: record.YIELD_TRAILING_3_YRS,
     yieldTrailing5Yrs: record.YIELD_TRAILING_5_YRS,
     reportPeriod: record.REPORT_PERIOD,
+    exactMatch,
   };
 }

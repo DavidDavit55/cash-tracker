@@ -43,6 +43,7 @@ function mapPensionItemToCard(item, kind) {
     feeFromDeposit: item.dmeiNihulHafkada ? parseFloat(item.dmeiNihulHafkada) : null,
     feeFromAccumulation: item.dmeiNihulTzvira ? parseFloat(item.dmeiNihulTzvira) : null,
     investmentTrack: mainTrack?.name || '',
+    investmentTrackCode: mainTrack?.kod || '',
     stockExposure: null,
     isDefaultTrack: /\d+\s*(שנה|ומטה|ומעלה)|תלוי גיל/.test(mainTrack?.name || ''),
     return12m: item.netReturn ? parseFloat(item.netReturn) : null,

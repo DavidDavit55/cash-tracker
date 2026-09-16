@@ -26,11 +26,11 @@ function PensionFundCard({ f, borderBottom }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetchRealFundData(f.provider, f.type, f.investmentTrack, f.name)
+    fetchRealFundData(f.provider, f.type, f.investmentTrack, f.name, f.investmentTrackCode)
       .then(data => { if (!cancelled) { setReal(data); setRealStatus(data ? 'ok' : 'none'); } })
       .catch(() => { if (!cancelled) setRealStatus('none'); });
     return () => { cancelled = true; };
-  }, [f.provider, f.type, f.investmentTrack, f.name]);
+  }, [f.provider, f.type, f.investmentTrack, f.name, f.investmentTrackCode]);
 
   const stockExposure = real?.stockExposurePercent ?? f.stockExposure;
   const showTrackAdvisory = f.isDefaultTrack && userProfile.age < YOUNG_AGE_THRESHOLD;
@@ -57,7 +57,8 @@ function PensionFundCard({ f, borderBottom }) {
             <div>מסלול השקעה: <b style={{ color: 'var(--text)' }}>{f.investmentTrack}</b></div>
             {real && (
               <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '6px', padding: '5px 8px', margin: '4px 0', fontSize: '0.72rem', color: '#065f46' }}>
-                🟢 נתוני שוק אמיתיים מבוססים על: <b>{real.fundName}</b> (דוח {String(real.reportPeriod).slice(0,4)}-{String(real.reportPeriod).slice(4)}) — התאמה לפי שם החברה בלבד, ייתכן שאינה הקרן המדויקת של הלקוח.
+                🟢 נתוני שוק אמיתיים מבוססים על: <b>{real.fundName}</b> (דוח {String(real.reportPeriod).slice(0,4)}-{String(real.reportPeriod).slice(4)})
+                {real.exactMatch ? ' — התאמה מדויקת לפי קוד המסלול.' : ' — התאמה לפי שם החברה בלבד, ייתכן שאינה הקרן המדויקת של הלקוח.'}
               </div>
             )}
             {stockExposure != null && <div>חשיפה למניות: <b style={{ color: 'var(--text)' }}>{stockExposure}%</b></div>}
