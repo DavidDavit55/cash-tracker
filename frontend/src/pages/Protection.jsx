@@ -17,11 +17,27 @@ export default function Protection() {
   }
 
   // ביטוח מנהלים הוא בפועל מוצר חיסכון עם צבירה - מוצג בגמל ופנסיה, לא כאן.
-  const insurancePolicies = (insuranceOverride || harBituachOverride)
+  // לקוח אמיתי בלי נתוני ביטוח (העלה רק מסלקה פנסיה, למשל) לא אמור לראות מוקאפ - רק לקוח
+  // ב-preview/DEV אמיתי (בלי חשבון) מקבל מוקאפ.
+  const isRealAccount = hasRealData && !isPreview;
+  const insurancePolicies = isRealAccount
     ? [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type !== 'managers')
     : mockInsurancePolicies;
   const monthlyTotal = insurancePolicies.reduce((s, p) => s + (p.monthlyPremium || 0), 0);
   const hasHealthInsurance = insurancePolicies.some(p => p.type === 'health');
+
+  if (isRealAccount && insurancePolicies.length === 0) {
+    return (
+      <div className="page">
+        <div className="page-header"><h2>ההגנות שלי</h2></div>
+        <div className="empty-state" style={{ marginTop: '60px' }}>
+          <div className="empty-icon">🛡️</div>
+          <h3 style={{ marginBottom: '8px' }}>עוד אין נתוני ביטוח</h3>
+          <p>עדיין לא יובאו נתוני ביטוח (מסלקה או הר הביטוח) עבורך.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">

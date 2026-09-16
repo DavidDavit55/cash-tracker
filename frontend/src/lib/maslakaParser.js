@@ -92,10 +92,18 @@ function sumYitrot(heshbon) {
   return { tagmulim, pitzuim };
 }
 
+// תפס אמיתי: נמצא בקובץ אמיתי אותו מסלול גיל כתוב פעם "לבני 50 ומטה" ופעם "לבני 05 ומטה" -
+// טעות הקלדה של החברה במקור (היפוך ספרות), לא שלנו. בלי תיקון, אותו מסלול נספר כשני מסלולים
+// שונים ועלול לגרום לבחירת "המסלול העיקרי" השגוי.
+function fixTransposedAgeDigits(name) {
+  const m = name.match(/^(.*לבני\s+)0(\d)(\s*(?:ומטה|ומעלה).*)$/);
+  return m ? `${m[1]}${m[2]}0${m[3]}` : name;
+}
+
 function tracksFromMaslulim(heshbon) {
   const amounts = {};
   for (const node of allDescendants(heshbon, 'PerutMasluleiHashkaa')) {
-    const name = directChildText(node, 'SHEM-MASLUL-HASHKAA');
+    const name = fixTransposedAgeDigits(directChildText(node, 'SHEM-MASLUL-HASHKAA'));
     const amt = parseFloat(directChildText(node, 'SCHUM-TZVIRA-BAMASLUL')) || 0;
     if (name) amounts[name] = (amounts[name] || 0) + amt;
   }
