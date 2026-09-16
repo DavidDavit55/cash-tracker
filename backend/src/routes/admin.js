@@ -59,4 +59,40 @@ router.patch('/clients/:id/status', authMiddleware, requireAdmin, async (req, re
   }
 });
 
+router.get('/clients/:id/financial-data', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT pension_data, insurance_data, client_info FROM client_financial_data WHERE user_id=$1',
+      [req.params.id]
+    );
+    res.json(rows[0] || null);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+router.put('/clients/:id/financial-data', authMiddleware, requireAdmin, async (req, res) => {
+  const { pensionData, insuranceData, clientInfo } = req.body;
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO client_financial_data (user_id, pension_data, insurance_data, client_info)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (user_id) DO UPDATE SET
+         pension_data = COALESCE($2, client_financial_data.pension_data),
+         insurance_data = COALESCE($3, client_financial_data.insurance_data),
+         client_info = COALESCE($4, client_financial_data.client_info),
+         updated_at = NOW()
+       RETURNING *`,
+      [req.params.id, pensionData ? JSON.stringify(pensionData) : null,
+        insuranceData ? JSON.stringify(insuranceData) : null,
+        clientInfo ? JSON.stringify(clientInfo) : null]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 export default router;

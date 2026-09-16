@@ -79,9 +79,11 @@ export default function Layout({ children, previewMode }) {
             <button className="drawer-item" onClick={() => go('/categories')}>
               <Tag size={20}/> קטגוריות
             </button>
-            <button className="drawer-item" onClick={() => go('/import')}>
-              <Upload size={20}/> ייבוא
-            </button>
+            {user?.email === import.meta.env.VITE_ADMIN_EMAIL && (
+              <button className="drawer-item" onClick={() => go('/import')}>
+                <Upload size={20}/> ייבוא
+              </button>
+            )}
             <div style={{ borderTop: '1px solid #f1f5f9', marginTop: '8px', paddingTop: '8px' }}>
               <button className="drawer-item" style={{ color: '#ef4444' }} onClick={() => { setDrawerOpen(false); logout(); }}>
                 <LogOut size={20}/> התנתק

@@ -14,6 +14,9 @@ const FIELDS = [
   ['life_stage', 'שלב חיים'],
 ];
 
+const DATE_FIELDS = new Set(['birth_date', 'id_issue_date']);
+const fmtField = (key, val) => (val && DATE_FIELDS.has(key)) ? new Date(val).toLocaleDateString('he-IL') : (val || '—');
+
 const STATUS_OPTIONS = ['ממתין למשיכת מסלקה', 'נוצר קשר', 'הושלם'];
 
 export default function AdminClientDetail() {
@@ -72,7 +75,7 @@ export default function AdminClientDetail() {
           {FIELDS.map(([key, label]) => (
             <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '1px solid #e2e8f0', fontSize: '0.88rem' }}>
               <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-              <span>{client[key] || '—'}</span>
+              <span>{fmtField(key, client[key])}</span>
             </div>
           ))}
         </div>

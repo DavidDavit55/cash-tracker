@@ -88,3 +88,12 @@ CREATE TABLE IF NOT EXISTS client_profiles (
   status VARCHAR(30) DEFAULT 'ממתין למשיכת מסלקה',
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- נתוני מסלקה שיובאו ע"י הסוכן (גמל/פנסיה/ביטוחים), לקוח לקוח
+CREATE TABLE IF NOT EXISTS client_financial_data (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  pension_data JSONB,
+  insurance_data JSONB,
+  client_info JSONB,
+  updated_at TIMESTAMP DEFAULT NOW()
+);

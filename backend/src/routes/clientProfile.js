@@ -3,6 +3,7 @@ import pool from '../db/pool.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { notifyNewClient } from '../services/whatsapp.js';
 import { sendNewClientEmail } from '../services/email.js';
+import { isValidIsraeliId } from '../lib/israeliId.js';
 
 const router = Router();
 
@@ -14,6 +15,9 @@ router.post('/', authMiddleware, async (req, res) => {
 
   if (!phone || !id_number || !birth_date) {
     return res.status(400).json({ error: 'שדות חסרים' });
+  }
+  if (!isValidIsraeliId(id_number)) {
+    return res.status(400).json({ error: 'תעודת זהות לא תקינה' });
   }
 
   try {
@@ -43,6 +47,19 @@ router.post('/', authMiddleware, async (req, res) => {
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM client_profiles WHERE user_id=$1', [req.user.id]);
+    res.json(rows[0] || null);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+router.get('/financial-data', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT pension_data, insurance_data, client_info FROM client_financial_data WHERE user_id=$1',
+      [req.user.id]
+    );
     res.json(rows[0] || null);
   } catch (err) {
     console.error(err);

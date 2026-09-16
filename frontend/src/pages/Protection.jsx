@@ -6,10 +6,11 @@ import ProductCard, { fmt } from '../components/ProductCard';
 import CoverageGapWidget from '../components/dashboard/CoverageGapWidget';
 
 export default function Protection() {
-  const { pensionOverride, insuranceOverride } = useMaslakaData() || {};
+  const { pensionOverride, insuranceOverride, loading: maslakaLoading } = useMaslakaData() || {};
   const isPreview = useIsPreviewRoute();
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
 
+  if (maslakaLoading) return <div className="loading full">טוען...</div>;
   if (!hasRealData && !isPreview && !import.meta.env.DEV) {
     return <PendingDataScreen />;
   }

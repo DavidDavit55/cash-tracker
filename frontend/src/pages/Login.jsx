@@ -26,8 +26,8 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">💵</div>
-        <h1>מעקב מזומן</h1>
+        <img src="/logo.png" alt="לוגו" style={{ height: '48px', objectFit: 'contain', marginBottom: '8px' }} />
+        <h1>NETWORTH</h1>
         <p className="auth-subtitle">התחבר לחשבון שלך</p>
         <form onSubmit={submit}>
           <div className="form-group">

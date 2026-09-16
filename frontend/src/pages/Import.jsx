@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import api from '../api/client';
-import { useMaslakaData } from '../hooks/useMaslakaData';
+import { useAuth } from '../hooks/useAuth';
 import { parseMaslakaFiles } from '../lib/maslakaParser';
 import { fmt } from '../components/ProductCard';
 
@@ -58,13 +59,18 @@ function mapInsuranceItemToCard(entry, isManagers) {
 }
 
 function MaslakaImportSection() {
-  const { setPensionOverride, setInsuranceOverride, setClientInfo } = useMaslakaData();
+  const [clients, setClients] = useState(null);
+  const [clientId, setClientId] = useState('');
   const [pensionStatus, setPensionStatus] = useState(null);
   const [insuranceStatus, setInsuranceStatus] = useState(null);
 
+  useEffect(() => {
+    api.get('/admin/clients').then(({ data }) => setClients(data)).catch(() => setClients([]));
+  }, []);
+
   const handlePensionFiles = async (e) => {
     const fileList = Array.from(e.target.files || []);
-    if (!fileList.length) return;
+    if (!fileList.length || !clientId) return;
     setPensionStatus('loading');
     try {
       const files = await Promise.all(fileList.map(async f => ({ name: f.name, text: await f.text() })));
@@ -74,8 +80,10 @@ function MaslakaImportSection() {
         ...result.study_fund.map(s => mapPensionItemToCard(s, 'study_fund')),
       ];
       if (!cards.length) { setPensionStatus('error'); return; }
-      setPensionOverride(cards);
-      if (result.client) setClientInfo(result.client);
+      await api.put(`/admin/clients/${clientId}/financial-data`, {
+        pensionData: cards,
+        clientInfo: result.client || undefined,
+      });
       setPensionStatus({ count: cards.length });
     } catch (err) {
       console.error('maslaka pension import failed:', err); // eslint-disable-line no-console
@@ -85,7 +93,7 @@ function MaslakaImportSection() {
 
   const handleInsuranceFiles = async (e) => {
     const fileList = Array.from(e.target.files || []);
-    if (!fileList.length) return;
+    if (!fileList.length || !clientId) return;
     setInsuranceStatus('loading');
     try {
       const files = await Promise.all(fileList.map(async f => ({ name: f.name, text: await f.text() })));
@@ -95,7 +103,7 @@ function MaslakaImportSection() {
         ...result.managers_insurance.map(e2 => mapInsuranceItemToCard(e2, true)),
       ];
       if (!cards.length) { setInsuranceStatus('error'); return; }
-      setInsuranceOverride(cards);
+      await api.put(`/admin/clients/${clientId}/financial-data`, { insuranceData: cards });
       setInsuranceStatus({ count: cards.length });
     } catch {
       setInsuranceStatus('error');
@@ -105,25 +113,33 @@ function MaslakaImportSection() {
   return (
     <>
       <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - גמל ופנסיה</div>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-          קובצי XML (CONSLTPNN / CONSLTKGM) — נשארים בדפדפן, לא נשלחים לשום שרת.
-        </p>
-        <input type="file" accept=".xml" multiple onChange={handlePensionFiles} style={{ fontSize: '0.8rem' }} />
-        {pensionStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
-        {pensionStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו מוצרים בקובץ.</p>}
-        {pensionStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>יובאו {pensionStatus.count} מוצרים — יופיעו במסך גמל/פנסיה.</p>}
+        <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>בחר לקוח</label>
+        <select value={clientId} onChange={e => setClientId(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '8px' }}>
+          <option value="">— בחר לקוח —</option>
+          {clients?.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
+        </select>
       </div>
 
-      <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
+      <div className="card" style={{ padding: '16px', marginBottom: '12px', opacity: clientId ? 1 : 0.5 }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - גמל ופנסיה</div>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+          קובצי XML (CONSLTPNN / CONSLTKGM) — יישמרו בפרופיל הלקוח שנבחר.
+        </p>
+        <input type="file" accept=".xml" multiple disabled={!clientId} onChange={handlePensionFiles} style={{ fontSize: '0.8rem' }} />
+        {pensionStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
+        {pensionStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו מוצרים בקובץ.</p>}
+        {pensionStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>נשמרו {pensionStatus.count} מוצרים ללקוח — יופיעו במסך גמל/פנסיה שלו.</p>}
+      </div>
+
+      <div className="card" style={{ padding: '16px', marginBottom: '12px', opacity: clientId ? 1 : 0.5 }}>
         <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - ביטוחים</div>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
           קובצי XML של ביטוחי חיים/מנהלים/בריאות (ING/INK/INP/INM).
         </p>
-        <input type="file" accept=".xml" multiple onChange={handleInsuranceFiles} style={{ fontSize: '0.8rem' }} />
+        <input type="file" accept=".xml" multiple disabled={!clientId} onChange={handleInsuranceFiles} style={{ fontSize: '0.8rem' }} />
         {insuranceStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
         {insuranceStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו פוליסות בקובץ.</p>}
-        {insuranceStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>יובאו {insuranceStatus.count} פוליסות — יופיעו במסך הגנות.</p>}
+        {insuranceStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>נשמרו {insuranceStatus.count} פוליסות ללקוח — יופיעו במסך הגנות שלו.</p>}
       </div>
     </>
   );
@@ -265,6 +281,11 @@ function ImportCard({ source }) {
 }
 
 export default function Import() {
+  const { user } = useAuth();
+  if (user && import.meta.env.VITE_ADMIN_EMAIL && user.email !== import.meta.env.VITE_ADMIN_EMAIL) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="page">
       <div className="page-header">

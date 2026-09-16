@@ -81,10 +81,11 @@ function PensionFundCard({ f, borderBottom }) {
 }
 
 export default function Pension() {
-  const { pensionOverride, insuranceOverride, clientInfo } = useMaslakaData() || {};
+  const { pensionOverride, insuranceOverride, clientInfo, loading: maslakaLoading } = useMaslakaData() || {};
   const isPreview = useIsPreviewRoute();
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
 
+  if (maslakaLoading) return <div className="loading full">טוען...</div>;
   if (!hasRealData && !isPreview && !import.meta.env.DEV) {
     return <PendingDataScreen />;
   }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
+import { isValidIsraeliId } from '../lib/israeliId';
 
 const QUESTIONS = [
   { key: 'risk_tolerance', label: 'מה סיבולת הסיכון שלך?', options: ['שמרן', 'מאוזן', 'נועז'] },
@@ -38,6 +39,11 @@ export default function Register() {
 
   const submitIdInfo = e => {
     e.preventDefault();
+    if (!isValidIsraeliId(idInfo.id_number)) {
+      setError('תעודת זהות לא תקינה');
+      return;
+    }
+    setError('');
     setStep(3);
   };
 
@@ -64,7 +70,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">💵</div>
+        <img src="/logo.png" alt="לוגו" style={{ height: '48px', objectFit: 'contain', marginBottom: '8px' }} />
         <h1>NETWORTH</h1>
         <p className="auth-subtitle">שלב {step} מתוך 3</p>
 
@@ -107,6 +113,7 @@ export default function Register() {
               <label>תאריך הנפקת תעודת הזהות</label>
               <input type="date" value={idInfo.id_issue_date} onChange={e => setIdInfo(p => ({ ...p, id_issue_date: e.target.value }))} required />
             </div>
+            {error && <div className="form-error">{error}</div>}
             <button type="submit" className="btn-primary">המשך</button>
           </form>
         )}

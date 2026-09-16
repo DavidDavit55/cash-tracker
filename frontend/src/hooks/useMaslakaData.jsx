@@ -1,15 +1,32 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import api from '../api/client';
+import { useAuth } from './useAuth';
 
-// מצב משותף לנתוני מסלקה שיובאו - כדי שהזנה ב"ייבוא" (עמוד למנהל/סוכן, לא ללקוח)
-// תשתקף במסכי גמל/פנסיה והגנות בלי שהלקוח יראה את כפתור הייבוא עצמו.
+// מצב נתוני מסלקה של הלקוח המחובר - נטען מה-DB (הוזן ע"י הסוכן בעמוד /import).
 const MaslakaDataContext = createContext(null);
 
 export function MaslakaDataProvider({ children }) {
+  const { user, loading: authLoading } = useAuth();
   const [pensionOverride, setPensionOverride] = useState(null);
   const [insuranceOverride, setInsuranceOverride] = useState(null);
-  const [clientInfo, setClientInfo] = useState(null); // { id, first, last, birth }
+  const [clientInfo, setClientInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { setLoading(false); return; }
+    api.get('/client-profile/financial-data')
+      .then(({ data }) => {
+        setPensionOverride(data?.pension_data || null);
+        setInsuranceOverride(data?.insurance_data || null);
+        setClientInfo(data?.client_info || null);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user, authLoading]);
+
   return (
-    <MaslakaDataContext.Provider value={{ pensionOverride, setPensionOverride, insuranceOverride, setInsuranceOverride, clientInfo, setClientInfo }}>
+    <MaslakaDataContext.Provider value={{ pensionOverride, setPensionOverride, insuranceOverride, setInsuranceOverride, clientInfo, setClientInfo, loading }}>
       {children}
     </MaslakaDataContext.Provider>
   );
