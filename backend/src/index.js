@@ -23,6 +23,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// מריץ מאחורי פרוקסי של Railway - בלי זה req.ip מחזיר את כתובת הפרוקסי, לא של הלקוח בפועל
+// (צריך כתובת אמיתית ליומן החתימה על ייפויי הכוח).
+app.set('trust proxy', true);
+
 // FRONTEND_URL תומך בכמה כתובות מופרדות בפסיק (למשל: money.davit-fin.co.il,networth.davit-fin.co.il)
 const allowedOrigins = (process.env.FRONTEND_URL || '').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
@@ -31,7 +35,7 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
 }));
-app.use(express.json());
+app.use(express.json({ limit: '3mb' })); // תמונת חתימה (dataURL) יכולה להיות כמה מאות KB
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use('/api/auth', authRoutes);

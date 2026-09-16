@@ -102,6 +102,17 @@ CREATE TABLE IF NOT EXISTS client_financial_data (
 -- מיגרציה: har_bituach_data נוסף אחרי היצירה הראשונה של הטבלה
 ALTER TABLE client_financial_data ADD COLUMN IF NOT EXISTS har_bituach_data JSONB;
 
+-- מיגרציה: מצב משפחתי, הכנסה חודשית, והרשאות משיכת מידע חתומות (מסלקה/ייפוי כוח ביטוח/הר ביטוח)
+-- - נוספו אחרי היצירה הראשונה של הטבלה.
+ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS marital_status VARCHAR(30);
+ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS monthly_income VARCHAR(30);
+ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS consent_maslaka BOOLEAN DEFAULT FALSE;
+ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS consent_insurance_poa BOOLEAN DEFAULT FALSE;
+ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS consent_har_bituach BOOLEAN DEFAULT FALSE;
+ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signature_data TEXT;
+ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signed_at TIMESTAMP;
+ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signed_ip VARCHAR(45);
+
 -- קבצי מקור גולמיים (ZIP מסלקה / Excel הר ביטוח) - נשמרים כדי שתיקון עתידי בפרסר יוכל
 -- "לפרסר מחדש" קבצים שכבר הועלו, בלי לבקש מהלקוח או מהסוכן להעלות שוב.
 -- user_id NULL להר ביטוח (קובץ אחד משותף לכמה לקוחות, לא שייך למישהו ספציפי).

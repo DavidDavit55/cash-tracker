@@ -7,6 +7,8 @@ const FIELDS = [
   ['id_number', 'תעודת זהות'],
   ['birth_date', 'תאריך לידה'],
   ['id_issue_date', 'תאריך הנפקת ת.ז'],
+  ['marital_status', 'מצב משפחתי'],
+  ['monthly_income', 'הכנסה חודשית'],
   ['risk_tolerance', 'סיבולת סיכון'],
   ['investment_horizon', 'אופק השקעה'],
   ['financial_knowledge', 'ידע פיננסי'],
@@ -90,6 +92,21 @@ export default function AdminClientDetail() {
               <span>{fmtField(key, client[key])}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {client && client.signature_data && (
+        <div className="card" style={{ padding: '16px', marginTop: '12px' }}>
+          <h3 style={{ marginBottom: '10px' }}>הרשאות משיכת מידע וחתימה</h3>
+          <div style={{ fontSize: '0.85rem', marginBottom: '10px' }}>
+            <div>מסלקה: {client.consent_maslaka ? '✅ אושר' : '❌ לא אושר'}</div>
+            <div>ייפוי כוח ביטוח: {client.consent_insurance_poa ? '✅ אושר' : '❌ לא אושר'}</div>
+            <div>הר הביטוח: {client.consent_har_bituach ? '✅ אושר' : '❌ לא אושר'}</div>
+          </div>
+          <img src={client.signature_data} alt="חתימה" style={{ border: '1px solid #e2e8f0', borderRadius: '8px', maxWidth: '260px', background: '#fff' }} />
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+            נחתם ב-{client.signed_at ? new Date(client.signed_at).toLocaleString('he-IL') : '—'} מכתובת {client.signed_ip || '—'}
+          </div>
         </div>
       )}
 
