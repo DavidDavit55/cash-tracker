@@ -52,7 +52,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const [account, setAccount] = useState({ name: '', email: '', password: '', phone: '' });
+  const [account, setAccount] = useState({ name: '', email: '', phone: '' });
   const [otpStage, setOtpStage] = useState('idle'); // idle | sent
   const [otpCode, setOtpCode] = useState('');
   const [idInfo, setIdInfo] = useState({ id_number: '', birth_date: '', id_issue_date: '', marital_status: '', monthly_income: '' });
@@ -66,7 +66,7 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      await register(account.name, account.email, account.password);
+      await register(account.name, account.email, account.phone);
       await api.post('/phone-verify/send', { phone: account.phone });
       setOtpStage('sent');
     } catch (err) {
@@ -171,10 +171,6 @@ export default function Register() {
             <div className="form-group">
               <label>אימייל</label>
               <input type="email" value={account.email} onChange={e => setAccount(p => ({ ...p, email: e.target.value }))} required placeholder="your@email.com" />
-            </div>
-            <div className="form-group">
-              <label>סיסמה</label>
-              <input type="password" value={account.password} onChange={e => setAccount(p => ({ ...p, password: e.target.value }))} required placeholder="לפחות 6 תווים" minLength={6} />
             </div>
             {error && <div className="form-error">{error}</div>}
             <button type="submit" className="btn-primary" disabled={loading}>

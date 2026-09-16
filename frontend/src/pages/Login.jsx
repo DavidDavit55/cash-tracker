@@ -3,21 +3,37 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { loginSendCode, loginCheckCode } = useAuth();
   const nav = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [stage, setStage] = useState('phone'); // phone | code
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const submit = async e => {
+  const sendCode = async e => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(form.email, form.password);
+      await loginSendCode(phone);
+      setStage('code');
+    } catch (err) {
+      setError(err.response?.data?.error || 'שגיאה בשליחת הקוד');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkCode = async e => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await loginCheckCode(phone, code);
       nav('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'שגיאה בהתחברות');
+      setError(err.response?.data?.error || 'קוד שגוי');
     } finally {
       setLoading(false);
     }
@@ -29,20 +45,33 @@ export default function Login() {
         <img src="/logo.png" alt="לוגו" style={{ height: '48px', objectFit: 'contain', marginBottom: '8px' }} />
         <h1>NETWORTH</h1>
         <p className="auth-subtitle">התחבר לחשבון שלך</p>
-        <form onSubmit={submit}>
-          <div className="form-group">
-            <label>אימייל</label>
-            <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required placeholder="your@email.com" />
-          </div>
-          <div className="form-group">
-            <label>סיסמה</label>
-            <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required placeholder="••••••••" />
-          </div>
-          {error && <div className="form-error">{error}</div>}
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'מתחבר...' : 'התחבר'}
-          </button>
-        </form>
+
+        {stage === 'phone' && (
+          <form onSubmit={sendCode}>
+            <div className="form-group">
+              <label>טלפון</label>
+              <input value={phone} onChange={e => setPhone(e.target.value)} required placeholder="050-1234567" />
+            </div>
+            {error && <div className="form-error">{error}</div>}
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'שולח...' : 'שלח קוד'}
+            </button>
+          </form>
+        )}
+
+        {stage === 'code' && (
+          <form onSubmit={checkCode}>
+            <div className="form-group">
+              <label>קוד אימות נשלח ב-SMS ל-{phone}</label>
+              <input value={code} onChange={e => setCode(e.target.value)} required placeholder="123456" inputMode="numeric" />
+            </div>
+            {error && <div className="form-error">{error}</div>}
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'מתחבר...' : 'התחבר'}
+            </button>
+          </form>
+        )}
+
         <p className="auth-link">אין חשבון? <Link to="/register">הרשם</Link></p>
       </div>
     </div>

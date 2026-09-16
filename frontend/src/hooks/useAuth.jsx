@@ -13,14 +13,18 @@ export function AuthProvider({ children }) {
     api.get('/auth/me').then(r => setUser(r.data)).catch(() => localStorage.removeItem('token')).finally(() => setLoading(false));
   }, []);
 
-  const login = async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password });
+  const loginSendCode = async (phone) => {
+    await api.post('/auth/login/send', { phone });
+  };
+
+  const loginCheckCode = async (phone, code) => {
+    const { data } = await api.post('/auth/login/check', { phone, code });
     localStorage.setItem('token', data.token);
     setUser(data.user);
   };
 
-  const register = async (name, email, password) => {
-    const { data } = await api.post('/auth/register', { name, email, password });
+  const register = async (name, email, phone) => {
+    const { data } = await api.post('/auth/register', { name, email, phone });
     localStorage.setItem('token', data.token);
     setUser(data.user);
   };
@@ -30,7 +34,7 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, loginSendCode, loginCheckCode, register, logout }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

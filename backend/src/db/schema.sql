@@ -113,6 +113,11 @@ ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signature_data TEXT;
 ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signed_at TIMESTAMP;
 ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signed_ip VARCHAR(45);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+-- מעבר ל-SMS-only: משתמשים קיימים שנרשמו לפני זה שמרו טלפון רק ב-client_profiles, לא ב-users -
+-- בלי זה הם ננעלים מחוץ למערכת כי ההתחברות עכשיו לפי users.phone בלבד.
+UPDATE users u SET phone = cp.phone FROM client_profiles cp WHERE cp.user_id = u.id AND u.phone IS NULL;
 
 -- קבצי מקור גולמיים (ZIP מסלקה / Excel הר ביטוח) - נשמרים כדי שתיקון עתידי בפרסר יוכל
 -- "לפרסר מחדש" קבצים שכבר הועלו, בלי לבקש מהלקוח או מהסוכן להעלות שוב.

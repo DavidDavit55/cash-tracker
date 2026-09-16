@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pool from '../db/pool.js';
+import { verifyService, toE164 } from '../lib/twilioVerify.js';
 
 const router = Router();
 
@@ -17,19 +17,18 @@ const DEFAULT_CATEGORIES = [
 ];
 
 router.post('/register', async (req, res) => {
-  const { email, password, name } = req.body;
-  if (!email || !password || !name) return res.status(400).json({ error: 'שדות חסרים' });
+  const { email, name, phone } = req.body;
+  if (!email || !name || !phone) return res.status(400).json({ error: 'שדות חסרים' });
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const existing = await client.query('SELECT id FROM users WHERE email=$1', [email]);
-    if (existing.rows.length) return res.status(409).json({ error: 'המייל כבר קיים' });
+    const existing = await client.query('SELECT id FROM users WHERE email=$1 OR phone=$2', [email, phone]);
+    if (existing.rows.length) return res.status(409).json({ error: 'המייל או הטלפון כבר קיימים' });
 
-    const hash = await bcrypt.hash(password, 12);
     const { rows } = await client.query(
-      'INSERT INTO users (email, password_hash, name) VALUES ($1,$2,$3) RETURNING id,email,name',
-      [email, hash, name]
+      'INSERT INTO users (email, name, phone) VALUES ($1,$2,$3) RETURNING id,email,name,phone',
+      [email, name, phone]
     );
     const user = rows[0];
 
@@ -53,21 +52,37 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+// התחברות ב-2 שלבים: שולחים קוד ב-SMS למספר, ואז מאמתים אותו - אין סיסמה בכלל.
+router.post('/login/send', async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ error: 'חסר מספר טלפון' });
   try {
-    const { rows } = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
-    if (!rows.length) return res.status(401).json({ error: 'מייל או סיסמה שגויים' });
+    const { rows } = await pool.query('SELECT id FROM users WHERE phone=$1', [phone]);
+    if (!rows.length) return res.status(404).json({ error: 'מספר טלפון לא נמצא' });
+    await verifyService().verifications.create({ to: toE164(phone), channel: 'sms' });
+    res.json({ sent: true });
+  } catch (err) {
+    console.error('Twilio send error:', err.message);
+    res.status(500).json({ error: 'שליחת הקוד נכשלה' });
+  }
+});
 
+router.post('/login/check', async (req, res) => {
+  const { phone, code } = req.body;
+  if (!phone || !code) return res.status(400).json({ error: 'חסרים שדות' });
+  try {
+    const check = await verifyService().verificationChecks.create({ to: toE164(phone), code });
+    if (check.status !== 'approved') return res.status(400).json({ error: 'קוד שגוי' });
+
+    const { rows } = await pool.query('SELECT id,email,name FROM users WHERE phone=$1', [phone]);
+    if (!rows.length) return res.status(404).json({ error: 'מספר טלפון לא נמצא' });
     const user = rows[0];
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(401).json({ error: 'מייל או סיסמה שגויים' });
 
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'שגיאת שרת' });
+    console.error('Twilio check error:', err.message);
+    res.status(400).json({ error: 'קוד שגוי או פג תוקף' });
   }
 });
 
