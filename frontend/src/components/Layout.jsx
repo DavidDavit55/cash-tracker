@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Receipt, TrendingUp, Menu, X, Target, Tag, Upload, LogOut, Wallet, Shield, PiggyBank, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useMaslakaData } from '../hooks/useMaslakaData';
 import { computeNetWorth } from '../mockData';
 
 export default function Layout({ children, previewMode }) {
   const { user, logout } = useAuth();
+  const { pensionOverride, insuranceOverride } = useMaslakaData() || {};
+  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
+  const showMockAmount = previewMode || import.meta.env.DEV || hasRealData;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
   const p = (path) => previewMode ? `/preview${path === '/' ? '' : path}` : path; // ponytail: temp mockup-only routing, remove with previewMode
@@ -34,7 +38,9 @@ export default function Layout({ children, previewMode }) {
           <span>עו"ש וחיסכון</span>
         </NavLink>
         <NavLink to={p('/')} end className={({ isActive }) => isActive ? 'nav-circle nav-circle-main active' : 'nav-circle nav-circle-main'}>
-          <span className="nav-circle-main-amount" style={{ direction: 'ltr' }}>₪{Math.round(computeNetWorth().netWorth / 1000)}K</span>
+          <span className="nav-circle-main-amount" style={{ direction: 'ltr' }}>
+            {showMockAmount ? `₪${Math.round(computeNetWorth().netWorth / 1000)}K` : '⏳'}
+          </span>
           <span>כמה אני שווה</span>
         </NavLink>
         <NavLink to={p('/budgets')} className={({ isActive }) => isActive ? 'nav-circle active' : 'nav-circle'}>

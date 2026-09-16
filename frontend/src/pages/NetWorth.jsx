@@ -1,11 +1,22 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
+import { useMaslakaData } from '../hooks/useMaslakaData';
+import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
+import PendingDataScreen from '../components/PendingDataScreen';
 import { netWorthHistory, accounts, liabilities, pensionFunds, computeNetWorth } from '../mockData';
 
 const fmt = (n) => `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`;
 
 export default function NetWorth() {
   const { user } = useAuth();
+  const { pensionOverride, insuranceOverride } = useMaslakaData() || {};
+  const isPreview = useIsPreviewRoute();
+  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
+
+  if (!hasRealData && !isPreview && !import.meta.env.DEV) {
+    return <PendingDataScreen />;
+  }
+
   const { netWorth } = computeNetWorth();
 
   const categories = [

@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { accounts, liabilities, buildWhatsAppLink } from '../mockData';
+import { useMaslakaData } from '../hooks/useMaslakaData';
+import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
+import PendingDataScreen from '../components/PendingDataScreen';
 import ProductCard, { fmt } from '../components/ProductCard';
 
 function AccountCard({ item, borderBottom, previewMode }) {
@@ -111,6 +114,14 @@ function LiabilityCard({ item, borderBottom }) {
 }
 
 export default function Assets({ previewMode }) {
+  const { pensionOverride, insuranceOverride } = useMaslakaData() || {};
+  const isPreview = useIsPreviewRoute();
+  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
+
+  if (!hasRealData && !isPreview && !import.meta.env.DEV) {
+    return <PendingDataScreen />;
+  }
+
   const accountsTotal = accounts.reduce((s, a) => s + a.balance, 0);
   const liabilitiesTotal = liabilities.reduce((s, l) => s + l.balance, 0);
 

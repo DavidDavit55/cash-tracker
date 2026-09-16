@@ -3,6 +3,8 @@ import { pensionFunds as mockPensionFunds, buildWhatsAppLink, userProfile } from
 import { fetchRealFundData } from '../lib/pensionNetApi';
 import { useMaslakaData } from '../hooks/useMaslakaData';
 import { getAgencyPensionFee, getAgencyGemelFee } from '../data/agencyFeeAgreements';
+import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
+import PendingDataScreen from '../components/PendingDataScreen';
 import ProductCard, { fmt } from '../components/ProductCard';
 
 const YOUNG_AGE_THRESHOLD = 50; // ponytail: כלל אצבע פשוט, לא נוסחה פיננסית מלאה
@@ -79,7 +81,14 @@ function PensionFundCard({ f, borderBottom }) {
 }
 
 export default function Pension() {
-  const { pensionOverride, clientInfo } = useMaslakaData() || {};
+  const { pensionOverride, insuranceOverride, clientInfo } = useMaslakaData() || {};
+  const isPreview = useIsPreviewRoute();
+  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
+
+  if (!hasRealData && !isPreview && !import.meta.env.DEV) {
+    return <PendingDataScreen />;
+  }
+
   const pensionFunds = pensionOverride || mockPensionFunds;
   const total = pensionFunds.reduce((s, p) => s + p.balance, 0);
 

@@ -1,10 +1,19 @@
 import { insurancePolicies as mockInsurancePolicies, buildWhatsAppLink } from '../mockData';
 import { useMaslakaData } from '../hooks/useMaslakaData';
+import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
+import PendingDataScreen from '../components/PendingDataScreen';
 import ProductCard, { fmt } from '../components/ProductCard';
 import CoverageGapWidget from '../components/dashboard/CoverageGapWidget';
 
 export default function Protection() {
-  const { insuranceOverride } = useMaslakaData() || {};
+  const { pensionOverride, insuranceOverride } = useMaslakaData() || {};
+  const isPreview = useIsPreviewRoute();
+  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
+
+  if (!hasRealData && !isPreview && !import.meta.env.DEV) {
+    return <PendingDataScreen />;
+  }
+
   const insurancePolicies = insuranceOverride || mockInsurancePolicies;
   const monthlyTotal = insurancePolicies.reduce((s, p) => s + (p.monthlyPremium || 0), 0);
   const hasHealthInsurance = insurancePolicies.some(p => p.type === 'health');
