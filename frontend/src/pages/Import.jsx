@@ -4,6 +4,15 @@ import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import { filesFromUploads, processMaslakaFiles, processHarBituachBuffer } from '../lib/maslakaCards';
+import { normalizeIsraeliId } from '../lib/israeliId';
+
+// משווה ת.ז בין מקורות (מסלקה/הר ביטוח/טופס הרשמה) בפורמט קנוני, כי כל אחד עלול לשמור
+// אחרת (עם/בלי אפסים מובילים).
+function findClientByIdNumber(clients, id) {
+  if (!id) return null;
+  const target = normalizeIsraeliId(id);
+  return clients?.find(c => c.id_number && normalizeIsraeliId(c.id_number) === target) || null;
+}
 
 // שומר עותק של קובץ המקור הגולמי ב-DB כדי ש"פרסר מחדש את כולם" יוכל להשתמש בו בעתיד -
 // לא חוסם את ההעלאה עצמה אם זה נכשל.
@@ -37,7 +46,7 @@ function MaslakaImportSection() {
       const files = await filesFromUploads(fileList);
       const { pensionCards, insuranceCards, clientInfo } = processMaslakaFiles(files);
       if (!pensionCards.length && !insuranceCards.length) { setMaslakaStatus('error'); return; }
-      const targetId = clientId || clients?.find(c => c.id_number === clientInfo?.id)?.id;
+      const targetId = clientId || findClientByIdNumber(clients, clientInfo?.id)?.id;
       if (!targetId) { setMaslakaStatus('no-client'); return; }
       await api.put(`/admin/clients/${targetId}/financial-data`, {
         pensionData: pensionCards.length ? pensionCards : undefined,
@@ -62,10 +71,14 @@ function MaslakaImportSection() {
       const cardsByTz = processHarBituachBuffer(buf);
       if (!cardsByTz.size) { setHarBituachStatus('error'); return; }
 
+      // אם זה קובץ של אדם אחד בלבד (ת.ז אחת) והוא לא זוהה - וייבחר לקוח למעלה, מניחים שזה
+      // בכוונה (בדיקה על יוזר טסטינג, למשל). בקובץ מרוכז אמיתי (הרבה ת.ז) לא מנחשים בכלל -
+      // עדיף לדווח "לא זוהה" מאשר לשייך בטעות נתונים של מישהו אחר ללקוח שנבחר במקרה.
+      const isSinglePersonFile = cardsByTz.size === 1;
       let matched = 0;
       let unmatched = 0;
       await Promise.all(Array.from(cardsByTz.entries()).map(async ([tz, cards]) => {
-        const client = clients?.find(c => c.id_number === tz);
+        const client = findClientByIdNumber(clients, tz) || (isSinglePersonFile ? clients?.find(c => c.id === clientId) : null);
         if (!client) { unmatched++; return; }
         matched++;
         await api.put(`/admin/clients/${client.id}/financial-data`, { harBituachData: cards });
@@ -109,6 +122,7 @@ function MaslakaImportSection() {
         <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ הר הביטוח</div>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
           קובץ Excel מרוכז לכמה לקוחות — לא צריך לבחור לקוח, כל שורה מנותבת אוטומטית לפי ת.ז.
+          (קובץ של אדם אחד שהת.ז שלו לא זוהתה יופנה ללקוח שנבחר למעלה, אם נבחר).
         </p>
         <input type="file" accept=".xlsx,.xls" onChange={handleHarBituachFile} style={{ fontSize: '0.8rem' }} />
         {harBituachStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
@@ -159,7 +173,7 @@ function ReprocessAllSection() {
           } else if (u.source === 'har_bituach') {
             const cardsByTz = processHarBituachBuffer(buf);
             for (const [tz, cards] of cardsByTz) {
-              const client = clients.find(c => c.id_number === tz);
+              const client = findClientByIdNumber(clients, tz);
               if (client) await api.put(`/admin/clients/${client.id}/financial-data`, { harBituachData: cards });
             }
           }

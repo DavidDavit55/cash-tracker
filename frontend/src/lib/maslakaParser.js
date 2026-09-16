@@ -1,6 +1,7 @@
 // פרסור קבצי XML של מסלקת הפנסיה הממשלתית ("מבנה אחיד להעברת מידע")
 // port נאמן ל-Python parser (C:\Users\david\.claude\skills\masalka-har-bituach-parser\parsers.py)
 // המקור: CRM_DAVIT_FIN/backend/parsers.py - כל ה"תפסי" (gotchas) שם מתועדים ומיושמים כאן.
+import { normalizeIsraeliId } from './israeliId';
 
 // STATUS-POLISA-O-CHESHBON: קודים מאומתים מול קבצים אמיתיים - 1=פעיל, 8=ריסק זמני (הכיסוי הביטוחי
 // עדיין פעיל, רק ההפקדות מוקפאות), כל קוד אחר (למשל 2) = לא פעיל. אם יתגלה קוד נוסף שלא תואם,
@@ -116,7 +117,7 @@ function tracksFromMaslulim(heshbon) {
 }
 
 function extractPension(root, result) {
-  const clientId = getVal(root, 'MISPAR-ZIHUY-LAKOACH');
+  const clientId = normalizeIsraeliId(getVal(root, 'MISPAR-ZIHUY-LAKOACH'));
   const lakoach = root.querySelector('YeshutLakoach');
   const fnameHe = lakoach ? directChildText(lakoach, 'SHEM-PRATI') : '';
   const lnameHe = lakoach ? directChildText(lakoach, 'SHEM-MISHPACHA') : '';
@@ -257,12 +258,21 @@ function extractStudyFund(root, result) {
 function extractInsurance(root, result) {
   const companyIng = getVal(root, 'SHEM-YATZRAN');
   const SUG_ING_LABELS = { '1': 'ביטוח מנהלים', '5': 'ביטוח מנהלים', '6': 'ביטוח חיים / ריסק', '7': 'בריאות', '8': 'ריסק', '10': 'תאונות אישיות' };
-  const sugRootEl = allDescendants(root, 'SUG-MUTZAR')[0];
-  const sugRoot = sugRootEl ? sugRootEl.textContent.trim() : '';
+
+  // SUG-MUTZAR נקרא בתוך כל בלוק Mutzar בנפרד - קובץ ING אחד יכול לערבב פוליסת ביטוח מנהלים
+  // אמיתית (עם צבירה) עם פוליסת ביטוח חיים רגילה ללא צבירה, וזה לא אותו סוג מוצר (אותו תיקון
+  // שכבר קיים ב-extractPension/extractStudyFund - קריאה גלובלית פעם אחת מיישמת שגוי את הסוג
+  // הראשון שנמצא על כל הפוליסות בקובץ).
+  const mutzarim = allDescendants(root, 'Mutzar');
+  const groups = mutzarim.length
+    ? mutzarim.map(m => ({ mutzar: m, sugRoot: getVal(m, 'SUG-MUTZAR') }))
+    : [{ mutzar: root, sugRoot: getVal(root, 'SUG-MUTZAR') }];
+
+  for (const { mutzar, sugRoot } of groups) {
   const rootLabel = SUG_ING_LABELS[sugRoot] || 'ביטוח';
   const isManagers = sugRoot === '1' || sugRoot === '5';
 
-  for (const heshbon of allDescendants(root, 'HeshbonOPolisa')) {
+  for (const heshbon of allDescendants(mutzar, 'HeshbonOPolisa')) {
     const pnum = directChildText(heshbon, 'MISPAR-POLISA-O-HESHBON');
     const tochnit = directChildText(heshbon, 'SHEM-TOCHNIT');
     const pstat = directChildText(heshbon, 'STATUS-POLISA-O-CHESHBON');
@@ -351,6 +361,7 @@ function extractInsurance(root, result) {
       entry.pledgedTo = pledgedTo;
       result.insurance.push(entry);
     }
+  }
   }
 }
 
