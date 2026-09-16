@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import api from '../api/client';
 
 export default function AdminClients() {
@@ -34,7 +34,7 @@ export default function AdminClients() {
       {clients?.length > 0 && (
         <div className="card">
           {clients.map(c => (
-            <div key={c.id} className="budget-card">
+            <Link key={c.id} to={`/admin/clients/${c.id}`} className="budget-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
               <div className="budget-header">
                 <span className="budget-cat">{c.name}</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.status}</span>
@@ -42,7 +42,7 @@ export default function AdminClients() {
               <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                 {c.email} · {c.phone || 'אין טלפון'} · נרשם ב-{new Date(c.created_at).toLocaleDateString('he-IL')}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

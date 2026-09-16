@@ -17,6 +17,7 @@ import Protection from './pages/Protection';
 import PreviewBudgets from './pages/PreviewBudgets';
 import DashboardV2 from './pages/DashboardV2';
 import AdminClients from './pages/AdminClients';
+import AdminClientDetail from './pages/AdminClientDetail';
 import './index.css';
 
 function ProtectedRoute({ children }) {
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/import" element={<ProtectedRoute><Import /></ProtectedRoute>} />
           <Route path="/incomes" element={<ProtectedRoute><Incomes /></ProtectedRoute>} />
           <Route path="/admin/clients" element={<ProtectedRoute><AdminClients /></ProtectedRoute>} />
+          <Route path="/admin/clients/:id" element={<ProtectedRoute><AdminClientDetail /></ProtectedRoute>} />
           <Route path="/preview" element={<Layout previewMode><NetWorth /></Layout>} />
           <Route path="/preview/assets" element={<Layout previewMode><Assets previewMode /></Layout>} />
           <Route path="/preview/pension" element={<Layout previewMode><Pension /></Layout>} />

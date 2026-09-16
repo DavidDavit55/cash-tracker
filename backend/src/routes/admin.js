@@ -26,4 +26,37 @@ router.get('/clients', authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
+router.get('/clients/:id', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.name, u.email, cp.*
+       FROM client_profiles cp
+       JOIN users u ON u.id = cp.user_id
+       WHERE u.id = $1`,
+      [req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'לא נמצא' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+router.patch('/clients/:id/status', authMiddleware, requireAdmin, async (req, res) => {
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: 'חסר סטטוס' });
+  try {
+    const { rows } = await pool.query(
+      `UPDATE client_profiles SET status=$1 WHERE user_id=$2 RETURNING *`,
+      [status, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'לא נמצא' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 export default router;

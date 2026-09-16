@@ -2,6 +2,7 @@ import { Router } from 'express';
 import pool from '../db/pool.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { notifyNewClient } from '../services/whatsapp.js';
+import { sendNewClientEmail } from '../services/email.js';
 
 const router = Router();
 
@@ -28,8 +29,9 @@ router.post('/', authMiddleware, async (req, res) => {
         risk_tolerance, investment_horizon, financial_knowledge, goals, life_stage]
     );
 
-    const { rows: [u] } = await pool.query('SELECT name FROM users WHERE id=$1', [req.user.id]);
+    const { rows: [u] } = await pool.query('SELECT name, email FROM users WHERE id=$1', [req.user.id]);
     notifyNewClient({ name: u?.name, phone }).catch(() => {});
+    sendNewClientEmail({ name: u?.name, phone, email: u?.email }).catch(() => {});
 
     res.json(rows[0]);
   } catch (err) {
