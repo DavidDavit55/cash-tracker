@@ -9,7 +9,11 @@ import ProductCard, { fmt } from '../components/ProductCard';
 
 const YOUNG_AGE_THRESHOLD = 50; // ponytail: כלל אצבע פשוט, לא נוסחה פיננסית מלאה
 
+// ponytail: "חיסכון לכל ילד" הוא חשבון ממשלתי אחיד - אין עליו הסכם סוכנות ואין מה להשוות מולו.
+const NO_DEAL_PRODUCT_TYPES = new Set(['חיסכון לכל ילד']);
+
 function getBestDealForFund(f) {
+  if (NO_DEAL_PRODUCT_TYPES.has(f.productType)) return null;
   return f.type === 'pension'
     ? getAgencyPensionFee(f.provider, { salary: userProfile.salary, balance: f.balance })
     : getAgencyGemelFee(f.provider, f.balance, f.type === 'gemel');

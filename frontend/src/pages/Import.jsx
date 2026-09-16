@@ -17,6 +17,7 @@ function mapPensionItemToCard(item, kind) {
     name: item.plan || item.company,
     provider: item.company,
     type: kind === 'pension' ? 'pension' : 'gemel',
+    productType: item.productType || null,
     balance: isNaN(balance) ? 0 : balance,
     feeFromDeposit: item.dmeiNihulHafkada ? parseFloat(item.dmeiNihulHafkada) : null,
     feeFromAccumulation: item.dmeiNihulTzvira ? parseFloat(item.dmeiNihulTzvira) : null,
