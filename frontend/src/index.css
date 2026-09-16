@@ -1,4 +1,8 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* מצהיר על סדר ה-layers: legacy קודם = עדיפות נמוכה יותר, כדי ש-Tailwind (בדף הדשבורד החדש) ינצח את האיפוס הגלובלי הזה */
+@layer legacy, theme, utilities;
+@layer legacy {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+}
 
 :root {
   --primary: #6366f1;
@@ -82,6 +86,23 @@ body {
 .nav-item.active { color: var(--primary); }
 .nav-item svg { transition: transform 0.15s; }
 .nav-item.active svg { transform: scale(1.1); }
+
+.nav-circles { justify-content: center; align-items: flex-end; gap: 6px; padding: 10px 6px 8px; border-top: none; background: transparent; box-shadow: none; }
+.nav-circle {
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  text-decoration: none; color: var(--text-muted); font-size: 0.62rem; text-align: center; width: 56px;
+}
+.nav-circle > svg { width: 44px; height: 44px; padding: 11px; box-sizing: border-box; border-radius: 50%; background: var(--card); border: 1px solid var(--border); color: var(--text-muted); }
+.nav-circle.active > svg { color: var(--primary); border-color: var(--primary); }
+.nav-circle-main { width: 76px; transform: translateY(-14px); font-weight: 700; color: var(--text); }
+.nav-circle-main-amount {
+  width: 68px; height: 68px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--success), #16a34a);
+  color: #fff; font-size: 0.85rem; font-weight: 800;
+  box-shadow: 0 6px 16px rgba(34,197,94,.35); border: 3px solid var(--bg);
+}
 
 /* PAGES */
 .page { padding: 16px; }

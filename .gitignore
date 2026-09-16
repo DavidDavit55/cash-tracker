@@ -7,3 +7,6 @@ frontend/.env
 dist/
 .DS_Store
 *.log
+.playwright-mcp/
+.superpowers/
+.claude/

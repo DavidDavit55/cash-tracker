@@ -1,6 +1,133 @@
 import { useState, useRef } from 'react';
 import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import api from '../api/client';
+import { useMaslakaData } from '../hooks/useMaslakaData';
+import { parseMaslakaFiles } from '../lib/maslakaParser';
+import { fmt } from '../components/ProductCard';
+
+function mapPensionItemToCard(item, kind) {
+  const tracks = item.tracks || [];
+  const mainTrack = tracks.length ? tracks.reduce((a, b) => (b.pct || 0) > (a.pct || 0) ? b : a) : null;
+  const balance = parseFloat(kind === 'pension' ? item.savings : item.tzvira);
+  return {
+    id: item.policyNum || `${kind}-${item.plan}-${item.company}`,
+    name: item.plan || item.company,
+    provider: item.company,
+    type: kind === 'pension' ? 'pension' : 'gemel',
+    balance: isNaN(balance) ? 0 : balance,
+    feeFromDeposit: item.dmeiNihulHafkada ? parseFloat(item.dmeiNihulHafkada) : null,
+    feeFromAccumulation: item.dmeiNihulTzvira ? parseFloat(item.dmeiNihulTzvira) : null,
+    investmentTrack: mainTrack?.name || '',
+    stockExposure: null,
+    isDefaultTrack: /\d+\s*(שנה|ומטה|ומעלה)|תלוי גיל/.test(mainTrack?.name || ''),
+    return12m: item.netReturn ? parseFloat(item.netReturn) : null,
+  };
+}
+
+function guessInsuranceType(label) {
+  if (!label) return 'other';
+  if (label.includes('בריאות')) return 'health';
+  if (label.includes('חיים')) return 'life';
+  if (label.includes('מנהלים')) return 'managers';
+  if (label.includes('תאונות')) return 'accident';
+  if (label.includes('ריסק')) return 'life';
+  return 'other';
+}
+
+function mapInsuranceItemToCard(entry, isManagers) {
+  const premium = parseFloat(entry.premium) || null;
+  const coverageItems = [];
+  if (isManagers) {
+    if (entry.riskAmount) coverageItems.push(`ריסק/חיים — כיסוי ${fmt(parseFloat(entry.riskAmount))}`);
+    if (entry.akeMonthly) coverageItems.push(`אובדן כושר עבודה — קצבה חודשית ${fmt(parseFloat(entry.akeMonthly))}`);
+    if (entry.track) coverageItems.push(`מסלול השקעה: ${entry.track}`);
+    if (entry.tzvira) coverageItems.push(`צבירה: ${fmt(parseFloat(entry.tzvira))}`);
+  } else if (entry.pledgedTo) {
+    coverageItems.push(`משועבד ל: ${entry.pledgedTo}`);
+  }
+  const coverage = entry.sumInsured ? parseFloat(entry.sumInsured) : (entry.riskAmount ? parseFloat(entry.riskAmount) : null);
+  return {
+    id: entry.policyNum || `${entry.company}-${entry.plan}`,
+    type: guessInsuranceType(entry.type),
+    name: entry.plan || entry.type,
+    provider: entry.company,
+    monthlyPremium: premium,
+    coverage,
+    coverageItems: coverageItems.length ? coverageItems : ['אין פרטי כיסוי נוספים בקובץ המסלקה'],
+  };
+}
+
+function MaslakaImportSection() {
+  const { setPensionOverride, setInsuranceOverride, setClientInfo } = useMaslakaData();
+  const [pensionStatus, setPensionStatus] = useState(null);
+  const [insuranceStatus, setInsuranceStatus] = useState(null);
+
+  const handlePensionFiles = async (e) => {
+    const fileList = Array.from(e.target.files || []);
+    if (!fileList.length) return;
+    setPensionStatus('loading');
+    try {
+      const files = await Promise.all(fileList.map(async f => ({ name: f.name, text: await f.text() })));
+      const result = parseMaslakaFiles(files);
+      const cards = [
+        ...result.pension.map(p => mapPensionItemToCard(p, 'pension')),
+        ...result.study_fund.map(s => mapPensionItemToCard(s, 'study_fund')),
+      ];
+      if (!cards.length) { setPensionStatus('error'); return; }
+      setPensionOverride(cards);
+      if (result.client) setClientInfo(result.client);
+      setPensionStatus({ count: cards.length });
+    } catch (err) {
+      console.error('maslaka pension import failed:', err); // eslint-disable-line no-console
+      setPensionStatus('error');
+    }
+  };
+
+  const handleInsuranceFiles = async (e) => {
+    const fileList = Array.from(e.target.files || []);
+    if (!fileList.length) return;
+    setInsuranceStatus('loading');
+    try {
+      const files = await Promise.all(fileList.map(async f => ({ name: f.name, text: await f.text() })));
+      const result = parseMaslakaFiles(files);
+      const cards = [
+        ...result.insurance.map(e2 => mapInsuranceItemToCard(e2, false)),
+        ...result.managers_insurance.map(e2 => mapInsuranceItemToCard(e2, true)),
+      ];
+      if (!cards.length) { setInsuranceStatus('error'); return; }
+      setInsuranceOverride(cards);
+      setInsuranceStatus({ count: cards.length });
+    } catch {
+      setInsuranceStatus('error');
+    }
+  };
+
+  return (
+    <>
+      <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - גמל ופנסיה</div>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+          קובצי XML (CONSLTPNN / CONSLTKGM) — נשארים בדפדפן, לא נשלחים לשום שרת.
+        </p>
+        <input type="file" accept=".xml" multiple onChange={handlePensionFiles} style={{ fontSize: '0.8rem' }} />
+        {pensionStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
+        {pensionStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו מוצרים בקובץ.</p>}
+        {pensionStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>יובאו {pensionStatus.count} מוצרים — יופיעו במסך גמל/פנסיה.</p>}
+      </div>
+
+      <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - ביטוחים</div>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+          קובצי XML של ביטוחי חיים/מנהלים/בריאות (ING/INK/INP/INM).
+        </p>
+        <input type="file" accept=".xml" multiple onChange={handleInsuranceFiles} style={{ fontSize: '0.8rem' }} />
+        {insuranceStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
+        {insuranceStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו פוליסות בקובץ.</p>}
+        {insuranceStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>יובאו {insuranceStatus.count} פוליסות — יופיעו במסך הגנות.</p>}
+      </div>
+    </>
+  );
+}
 
 const SOURCES = [
   {
@@ -147,6 +274,9 @@ export default function Import() {
         ייבא עסקאות מהבנק והאשראי שלך. כפילויות מזוהות אוטומטית.
       </p>
       {SOURCES.map(s => <ImportCard key={s.id} source={s} />)}
+
+      <h2 style={{ fontSize: '1.1rem', margin: '20px 0 8px' }}>ייבוא מסלקה (לך בלבד — לא מוצג ללקוח)</h2>
+      <MaslakaImportSection />
     </div>
   );
 }
