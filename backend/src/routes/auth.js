@@ -27,14 +27,15 @@ router.post('/register', async (req, res) => {
       `SELECT u.id, cp.signature_data FROM users u LEFT JOIN client_profiles cp ON cp.user_id = u.id WHERE u.email=$1 OR u.phone=$2`,
       [email, phone]
     );
-    const existing = existingRows[0];
 
     // אם ההרשמה הקודמת עם אותו מייל/טלפון לא הושלמה (אין חתימה על ההרשאות) - ממשיכים איתה
     // במקום לחסום; משתמש שנתקע באמצע (בדיקת OTP נכשלה וכו') לא צריך להישאר תקוע לצמיתות.
-    if (existing?.signature_data) {
+    // אם המייל והטלפון שייכים לשתי שורות שונות (מצב תקוע נדיר) - לא מנחשים איזו, חוסמים בבירור.
+    if (existingRows.some(r => r.signature_data) || new Set(existingRows.map(r => r.id)).size > 1) {
       await client.query('ROLLBACK');
-      return res.status(409).json({ error: 'המייל או הטלפון כבר רשומים ופעילים' });
+      return res.status(409).json({ error: 'המייל או הטלפון כבר רשומים - פנה לתמיכה אם ההרשמה הקודמת נתקעה' });
     }
+    const existing = existingRows[0];
 
     let user;
     if (existing) {
