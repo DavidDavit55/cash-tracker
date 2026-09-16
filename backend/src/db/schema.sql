@@ -71,3 +71,20 @@ CREATE TABLE IF NOT EXISTS merchant_categories (
   updated_at TIMESTAMP DEFAULT NOW(),
   UNIQUE(user_id, merchant)
 );
+
+-- פרופיל לקוח NETWORTH (רישום עצמי + שאלון)
+CREATE TABLE IF NOT EXISTS client_profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+  phone VARCHAR(20),
+  id_number VARCHAR(20),
+  birth_date DATE,
+  id_issue_date DATE,
+  risk_tolerance VARCHAR(50),
+  investment_horizon VARCHAR(50),
+  financial_knowledge VARCHAR(50),
+  goals VARCHAR(50),
+  life_stage VARCHAR(50),
+  status VARCHAR(30) DEFAULT 'ממתין למשיכת מסלקה',
+  created_at TIMESTAMP DEFAULT NOW()
+);
