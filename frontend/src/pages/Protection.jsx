@@ -6,16 +6,18 @@ import ProductCard, { fmt } from '../components/ProductCard';
 import CoverageGapWidget from '../components/dashboard/CoverageGapWidget';
 
 export default function Protection() {
-  const { pensionOverride, insuranceOverride, loading: maslakaLoading } = useMaslakaData() || {};
+  const { pensionOverride, insuranceOverride, harBituachOverride, loading: maslakaLoading } = useMaslakaData() || {};
   const isPreview = useIsPreviewRoute();
-  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
+  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
 
   if (maslakaLoading) return <div className="loading full">טוען...</div>;
   if (!hasRealData && !isPreview && !import.meta.env.DEV) {
     return <PendingDataScreen />;
   }
 
-  const insurancePolicies = insuranceOverride || mockInsurancePolicies;
+  const insurancePolicies = (insuranceOverride || harBituachOverride)
+    ? [...(insuranceOverride || []), ...(harBituachOverride || [])]
+    : mockInsurancePolicies;
   const monthlyTotal = insurancePolicies.reduce((s, p) => s + (p.monthlyPremium || 0), 0);
   const hasHealthInsurance = insurancePolicies.some(p => p.type === 'health');
 

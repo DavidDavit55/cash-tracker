@@ -57,7 +57,7 @@ router.get('/', authMiddleware, async (req, res) => {
 router.get('/financial-data', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT pension_data, insurance_data, client_info FROM client_financial_data WHERE user_id=$1',
+      'SELECT pension_data, insurance_data, har_bituach_data, client_info FROM client_financial_data WHERE user_id=$1',
       [req.user.id]
     );
     res.json(rows[0] || null);

@@ -9,6 +9,7 @@ export function MaslakaDataProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
   const [pensionOverride, setPensionOverride] = useState(null);
   const [insuranceOverride, setInsuranceOverride] = useState(null);
+  const [harBituachOverride, setHarBituachOverride] = useState(null);
   const [clientInfo, setClientInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,6 +20,7 @@ export function MaslakaDataProvider({ children }) {
       .then(({ data }) => {
         setPensionOverride(data?.pension_data || null);
         setInsuranceOverride(data?.insurance_data || null);
+        setHarBituachOverride(data?.har_bituach_data || null);
         setClientInfo(data?.client_info || null);
       })
       .catch(() => {})
@@ -26,7 +28,7 @@ export function MaslakaDataProvider({ children }) {
   }, [user, authLoading]);
 
   return (
-    <MaslakaDataContext.Provider value={{ pensionOverride, setPensionOverride, insuranceOverride, setInsuranceOverride, clientInfo, setClientInfo, loading }}>
+    <MaslakaDataContext.Provider value={{ pensionOverride, setPensionOverride, insuranceOverride, setInsuranceOverride, harBituachOverride, setHarBituachOverride, clientInfo, setClientInfo, loading }}>
       {children}
     </MaslakaDataContext.Provider>
   );

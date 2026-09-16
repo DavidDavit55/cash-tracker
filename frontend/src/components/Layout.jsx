@@ -7,8 +7,8 @@ import { computeNetWorth } from '../mockData';
 
 export default function Layout({ children, previewMode }) {
   const { user, logout } = useAuth();
-  const { pensionOverride, insuranceOverride } = useMaslakaData() || {};
-  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
+  const { pensionOverride, insuranceOverride, harBituachOverride } = useMaslakaData() || {};
+  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
   const showMockAmount = previewMode || import.meta.env.DEV || hasRealData;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();

@@ -4,6 +4,7 @@ import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 import { parseMaslakaFiles } from '../lib/maslakaParser';
+import { parseHarBituach, mapHarBituachRowToCard } from '../lib/harBituachParser';
 import { fmt } from '../components/ProductCard';
 
 function mapPensionItemToCard(item, kind) {
@@ -63,6 +64,7 @@ function MaslakaImportSection() {
   const [clientId, setClientId] = useState('');
   const [pensionStatus, setPensionStatus] = useState(null);
   const [insuranceStatus, setInsuranceStatus] = useState(null);
+  const [harBituachStatus, setHarBituachStatus] = useState(null);
 
   useEffect(() => {
     api.get('/admin/clients').then(({ data }) => setClients(data)).catch(() => setClients([]));
@@ -70,7 +72,7 @@ function MaslakaImportSection() {
 
   const handlePensionFiles = async (e) => {
     const fileList = Array.from(e.target.files || []);
-    if (!fileList.length || !clientId) return;
+    if (!fileList.length) return;
     setPensionStatus('loading');
     try {
       const files = await Promise.all(fileList.map(async f => ({ name: f.name, text: await f.text() })));
@@ -80,10 +82,13 @@ function MaslakaImportSection() {
         ...result.study_fund.map(s => mapPensionItemToCard(s, 'study_fund')),
       ];
       if (!cards.length) { setPensionStatus('error'); return; }
-      await api.put(`/admin/clients/${clientId}/financial-data`, {
+      const targetId = clientId || clients?.find(c => c.id_number === result.client?.id)?.id;
+      if (!targetId) { setPensionStatus('no-client'); return; }
+      await api.put(`/admin/clients/${targetId}/financial-data`, {
         pensionData: cards,
         clientInfo: result.client || undefined,
       });
+      if (!clientId && targetId) setClientId(targetId);
       setPensionStatus({ count: cards.length });
     } catch (err) {
       console.error('maslaka pension import failed:', err); // eslint-disable-line no-console
@@ -110,6 +115,38 @@ function MaslakaImportSection() {
     }
   };
 
+  const handleHarBituachFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setHarBituachStatus('loading');
+    try {
+      const buf = await file.arrayBuffer();
+      const rows = parseHarBituach(buf);
+      if (!rows.length) { setHarBituachStatus('error'); return; }
+
+      const byTz = new Map();
+      for (const row of rows) {
+        if (!byTz.has(row.tz)) byTz.set(row.tz, []);
+        byTz.get(row.tz).push(row);
+      }
+
+      let matched = 0;
+      let unmatched = 0;
+      await Promise.all(Array.from(byTz.entries()).map(async ([tz, tzRows]) => {
+        const client = clients?.find(c => c.id_number === tz);
+        if (!client) { unmatched++; return; }
+        matched++;
+        const cards = tzRows.map(mapHarBituachRowToCard);
+        await api.put(`/admin/clients/${client.id}/financial-data`, { harBituachData: cards });
+      }));
+
+      setHarBituachStatus({ matched, unmatched });
+    } catch (err) {
+      console.error('har bituach import failed:', err); // eslint-disable-line no-console
+      setHarBituachStatus('error');
+    }
+  };
+
   return (
     <>
       <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
@@ -120,14 +157,15 @@ function MaslakaImportSection() {
         </select>
       </div>
 
-      <div className="card" style={{ padding: '16px', marginBottom: '12px', opacity: clientId ? 1 : 0.5 }}>
+      <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
         <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - גמל ופנסיה</div>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-          קובצי XML (CONSLTPNN / CONSLTKGM) — יישמרו בפרופיל הלקוח שנבחר.
+          קובצי XML (CONSLTPNN / CONSLTKGM) — אם ת.ז בקובץ תואמת ללקוח רשום, ייבחר אוטומטית. אחרת בחר לקוח למעלה קודם.
         </p>
-        <input type="file" accept=".xml" multiple disabled={!clientId} onChange={handlePensionFiles} style={{ fontSize: '0.8rem' }} />
+        <input type="file" accept=".xml" multiple onChange={handlePensionFiles} style={{ fontSize: '0.8rem' }} />
         {pensionStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
         {pensionStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו מוצרים בקובץ.</p>}
+        {pensionStatus === 'no-client' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>ת.ז מהקובץ לא נמצאה במערכת — בחר לקוח ידנית למעלה ונסה שוב.</p>}
         {pensionStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>נשמרו {pensionStatus.count} מוצרים ללקוח — יופיעו במסך גמל/פנסיה שלו.</p>}
       </div>
 
@@ -140,6 +178,22 @@ function MaslakaImportSection() {
         {insuranceStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
         {insuranceStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו פוליסות בקובץ.</p>}
         {insuranceStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>נשמרו {insuranceStatus.count} פוליסות ללקוח — יופיעו במסך הגנות שלו.</p>}
+      </div>
+
+      <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ הר הביטוח</div>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+          קובץ Excel מרוכז לכמה לקוחות — לא צריך לבחור לקוח, כל שורה מנותבת אוטומטית לפי ת.ז.
+        </p>
+        <input type="file" accept=".xlsx,.xls" onChange={handleHarBituachFile} style={{ fontSize: '0.8rem' }} />
+        {harBituachStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
+        {harBituachStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו שורות בקובץ.</p>}
+        {harBituachStatus && harBituachStatus !== 'loading' && harBituachStatus !== 'error' && (
+          <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>
+            עודכנו {harBituachStatus.matched} לקוחות.
+            {harBituachStatus.unmatched > 0 && ` ${harBituachStatus.unmatched} תעודות זהות לא זוהו במערכת (לקוח לא רשום).`}
+          </p>
+        )}
       </div>
     </>
   );

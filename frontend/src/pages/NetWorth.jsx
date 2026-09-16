@@ -9,9 +9,9 @@ const fmt = (n) => `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 0 })
 
 export default function NetWorth() {
   const { user } = useAuth();
-  const { pensionOverride, insuranceOverride, loading: maslakaLoading } = useMaslakaData() || {};
+  const { pensionOverride, insuranceOverride, harBituachOverride, loading: maslakaLoading } = useMaslakaData() || {};
   const isPreview = useIsPreviewRoute();
-  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride);
+  const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
 
   if (maslakaLoading) return <div className="loading full">טוען...</div>;
   if (!hasRealData && !isPreview && !import.meta.env.DEV) {

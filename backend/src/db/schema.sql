@@ -94,6 +94,10 @@ CREATE TABLE IF NOT EXISTS client_financial_data (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   pension_data JSONB,
   insurance_data JSONB,
+  har_bituach_data JSONB,
   client_info JSONB,
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- מיגרציה: har_bituach_data נוסף אחרי היצירה הראשונה של הטבלה
+ALTER TABLE client_financial_data ADD COLUMN IF NOT EXISTS har_bituach_data JSONB;
