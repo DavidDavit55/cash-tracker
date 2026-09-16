@@ -205,19 +205,24 @@ export default function Register() {
             {CONSENT_ITEMS.map(item => (
               <div key={item.key} style={{ background: 'var(--bg)', borderRadius: '10px', padding: '10px 12px', marginBottom: '10px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '6px' }}>{item.title}</div>
-                <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '8px' }}>
+                <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                   {buildConsentText(item.key, account.name, idInfo.id_number)}
                 </p>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={consents[item.field]}
-                    onChange={e => setConsents(p => ({ ...p, [item.field]: e.target.checked }))}
-                  />
-                  קראתי ואני מאשר/ת
-                </label>
               </div>
             ))}
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: '4px 0 14px' }}>
+              <input
+                type="checkbox"
+                checked={consents.consent_maslaka && consents.consent_insurance_poa && consents.consent_har_bituach}
+                onChange={e => setConsents({
+                  consent_maslaka: e.target.checked,
+                  consent_insurance_poa: e.target.checked,
+                  consent_har_bituach: e.target.checked,
+                })}
+              />
+              קראתי ואני מאשר/ת את שלוש ההרשאות למעלה
+            </label>
 
             <div className="form-group">
               <label>חתימה</label>
