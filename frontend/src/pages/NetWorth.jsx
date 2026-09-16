@@ -51,7 +51,7 @@ export default function NetWorth() {
         name,
         total: pensionItems.filter(p => pensionCategoryOf(p) === name).reduce((s, p) => s + (p.balance || 0), 0),
         color: '#22c55e',
-      }))
+      })).filter(cat => cat.total > 0)
     : [
       { name: 'עו"ש, חיסכון ופיקדונות', total: accounts.reduce((s, a) => s + a.balance, 0), color: '#6366f1' },
       { name: 'גמל ופנסיה', total: pensionTotal, color: '#22c55e' },
