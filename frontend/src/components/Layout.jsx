@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Receipt, TrendingUp, Menu, X, Target, Tag, Upload, LogOut, Wallet, Shield, PiggyBank } from 'lucide-react';
+import { LayoutDashboard, Receipt, TrendingUp, Menu, X, Target, Tag, Upload, LogOut, Wallet, Shield, PiggyBank, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { computeNetWorth } from '../mockData';
 
@@ -59,6 +59,11 @@ export default function Layout({ children, previewMode }) {
             <button className="drawer-item" onClick={() => go('/summary')}>
               <LayoutDashboard size={20}/> סיכום חודשי
             </button>
+            {user?.email === import.meta.env.VITE_ADMIN_EMAIL && (
+              <button className="drawer-item" onClick={() => go('/admin/clients')}>
+                <Users size={20}/> לקוחות (מנהל)
+              </button>
+            )}
             <button className="drawer-item" onClick={() => go('/incomes')}>
               <TrendingUp size={20}/> הכנסות
             </button>
