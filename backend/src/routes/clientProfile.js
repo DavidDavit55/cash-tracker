@@ -39,7 +39,7 @@ router.post('/', authMiddleware, async (req, res) => {
          consent_har_bituach=$15, signature_data=$16, signed_at=NOW(), signed_ip=$17
        RETURNING *`,
       [req.user.id, phone, id_number, birth_date, id_issue_date || null,
-        risk_tolerance, investment_horizon, financial_knowledge, goals, life_stage,
+        risk_tolerance || null, investment_horizon || null, financial_knowledge || null, goals || null, life_stage || null,
         marital_status || null, monthly_income || null,
         !!consent_maslaka, !!consent_insurance_poa, !!consent_har_bituach, signature_data, req.ip]
     );
