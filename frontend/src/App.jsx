@@ -41,7 +41,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+          {/* בלי PublicRoute: אחרי שלב 1 (יצירת חשבון) המשתמש כבר מחובר, אבל עדיין באמצע האשף (שלבים 2-3) - לא רוצים להעיף אותו החוצה */}
+          <Route path="/register" element={<Register />} />
           <Route path="/" element={<ProtectedRoute><NetWorth /></ProtectedRoute>} />
           <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
           <Route path="/pension" element={<ProtectedRoute><Pension /></ProtectedRoute>} />
