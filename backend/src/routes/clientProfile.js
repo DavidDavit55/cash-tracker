@@ -2,6 +2,7 @@ import { Router } from 'express';
 import pool from '../db/pool.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { notifyNewClient } from '../services/whatsapp.js';
+import { notifyAdminNewLead, notifyClientWelcome } from '../services/whatsappTwilio.js';
 import { sendNewClientEmail } from '../services/email.js';
 import { isValidIsraeliId } from '../lib/israeliId.js';
 
@@ -46,6 +47,8 @@ router.post('/', authMiddleware, async (req, res) => {
     const { rows: [u] } = await pool.query('SELECT name, email FROM users WHERE id=$1', [req.user.id]);
     notifyNewClient({ name: u?.name, phone }).catch(() => {});
     sendNewClientEmail({ name: u?.name, phone, email: u?.email }).catch(() => {});
+    notifyAdminNewLead({ name: u?.name, phone }).catch(() => {});
+    notifyClientWelcome({ phone, name: u?.name }).catch(() => {});
 
     res.json(rows[0]);
   } catch (err) {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import pool from '../db/pool.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { notifyClientNewRecommendations } from '../services/whatsappTwilio.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -75,7 +76,7 @@ router.get('/clients/:id/financial-data', authMiddleware, requireAdmin, async (r
 });
 
 router.put('/clients/:id/financial-data', authMiddleware, requireAdmin, async (req, res) => {
-  const { pensionData, insuranceData, harBituachData, clientInfo } = req.body;
+  const { pensionData, insuranceData, harBituachData, clientInfo, notify } = req.body;
   try {
     const { rows } = await pool.query(
       `INSERT INTO client_financial_data (user_id, pension_data, insurance_data, har_bituach_data, client_info)
@@ -92,6 +93,15 @@ router.put('/clients/:id/financial-data', authMiddleware, requireAdmin, async (r
         harBituachData ? JSON.stringify(harBituachData) : null,
         clientInfo ? JSON.stringify(clientInfo) : null]
     );
+    // התראה רק בהעלאה חיה של קובץ ללקוח בודד (notify מגיע מ-Import.jsx) - לא ב"פרסר מחדש
+    // את כולם", שאחרת שולח הודעה לכל הלקוחות בכל פעם שמתקנים באג בפרסר.
+    if (notify) {
+      const { rows: [u] } = await pool.query(
+        `SELECT u.name, cp.phone FROM users u LEFT JOIN client_profiles cp ON cp.user_id = u.id WHERE u.id=$1`,
+        [req.params.id]
+      );
+      if (u?.phone) notifyClientNewRecommendations({ phone: u.phone, name: u.name }).catch(() => {});
+    }
     res.json(rows[0]);
   } catch (err) {
     console.error(err);

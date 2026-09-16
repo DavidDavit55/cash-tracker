@@ -52,6 +52,7 @@ function MaslakaImportSection() {
         pensionData: pensionCards.length ? pensionCards : undefined,
         insuranceData: insuranceCards.length ? insuranceCards : undefined,
         clientInfo: clientInfo || undefined,
+        notify: true,
       });
       saveRawUpload(fileList[0], 'maslaka', targetId);
       if (!clientId) setClientId(targetId);
@@ -81,7 +82,7 @@ function MaslakaImportSection() {
         const client = findClientByIdNumber(clients, tz) || (isSinglePersonFile ? clients?.find(c => c.id === clientId) : null);
         if (!client) { unmatched++; return; }
         matched++;
-        await api.put(`/admin/clients/${client.id}/financial-data`, { harBituachData: cards });
+        await api.put(`/admin/clients/${client.id}/financial-data`, { harBituachData: cards, notify: true });
       }));
 
       saveRawUpload(file, 'har_bituach', null);
