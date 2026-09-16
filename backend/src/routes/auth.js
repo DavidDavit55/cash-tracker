@@ -23,21 +23,38 @@ router.post('/register', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const existing = await client.query('SELECT id FROM users WHERE email=$1 OR phone=$2', [email, phone]);
-    if (existing.rows.length) return res.status(409).json({ error: 'המייל או הטלפון כבר קיימים' });
-
-    const { rows } = await client.query(
-      'INSERT INTO users (email, name, phone) VALUES ($1,$2,$3) RETURNING id,email,name,phone',
-      [email, name, phone]
+    const { rows: existingRows } = await client.query(
+      `SELECT u.id, cp.signature_data FROM users u LEFT JOIN client_profiles cp ON cp.user_id = u.id WHERE u.email=$1 OR u.phone=$2`,
+      [email, phone]
     );
-    const user = rows[0];
+    const existing = existingRows[0];
 
-    // Insert default categories
-    for (const cat of DEFAULT_CATEGORIES) {
-      await client.query(
-        'INSERT INTO categories (user_id, name, icon, color, is_default) VALUES ($1,$2,$3,$4,true)',
-        [user.id, cat.name, cat.icon, cat.color]
+    // אם ההרשמה הקודמת עם אותו מייל/טלפון לא הושלמה (אין חתימה על ההרשאות) - ממשיכים איתה
+    // במקום לחסום; משתמש שנתקע באמצע (בדיקת OTP נכשלה וכו') לא צריך להישאר תקוע לצמיתות.
+    if (existing?.signature_data) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'המייל או הטלפון כבר רשומים ופעילים' });
+    }
+
+    let user;
+    if (existing) {
+      const { rows } = await client.query(
+        'UPDATE users SET email=$1, name=$2, phone=$3 WHERE id=$4 RETURNING id,email,name,phone',
+        [email, name, phone, existing.id]
       );
+      user = rows[0];
+    } else {
+      const { rows } = await client.query(
+        'INSERT INTO users (email, name, phone) VALUES ($1,$2,$3) RETURNING id,email,name,phone',
+        [email, name, phone]
+      );
+      user = rows[0];
+      for (const cat of DEFAULT_CATEGORIES) {
+        await client.query(
+          'INSERT INTO categories (user_id, name, icon, color, is_default) VALUES ($1,$2,$3,$4,true)',
+          [user.id, cat.name, cat.icon, cat.color]
+        );
+      }
     }
 
     await client.query('COMMIT');
