@@ -108,6 +108,25 @@ async function handleMessage(msg) {
 export function getStatus() { return { status, hasQr: !!qrDataUrl }; }
 export function getQrDataUrl() { return qrDataUrl; }
 
+export async function notifyNewClient({ name, phone }) {
+  const target = process.env.ADMIN_WHATSAPP_NUMBER;
+  if (!target) {
+    console.log('⚠️  ADMIN_WHATSAPP_NUMBER לא מוגדר — לא נשלחה התראה');
+    return;
+  }
+  if (!client || status !== 'ready') {
+    console.log('⚠️  WhatsApp לא מחובר — לא נשלחה התראת לקוח חדש');
+    return;
+  }
+  const chatId = target.replace(/\D/g, '') + '@c.us';
+  const text = `📋 לקוח חדש נרשם ב-NETWORTH\nשם: ${name || 'לא ידוע'}\nטלפון: ${phone || 'לא צוין'}`;
+  try {
+    await client.sendMessage(chatId, text);
+  } catch (err) {
+    console.error('WhatsApp notify failed:', err.message);
+  }
+}
+
 export function initWhatsApp() {
   if (!process.env.ANTHROPIC_API_KEY) {
     console.log('⚠️  WhatsApp: ANTHROPIC_API_KEY חסר — בוט לא יופעל');
