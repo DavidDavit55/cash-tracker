@@ -99,10 +99,12 @@ export default function Pension() {
   }
 
   const pensionFunds = pensionOverride || mockPensionFunds;
-  const total = pensionFunds.reduce((s, p) => s + p.balance, 0);
 
   // ביטוח מנהלים הוא בפועל מוצר חיסכון (יש לו צבירה) - מוצג כאן, לא בהגנות.
+  // לא תמיד יש לנו את הצבירה שלו (למשל דוח הר ביטוח לא כולל אותה) - נספר רק מה שידוע.
   const managersProducts = [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type === 'managers');
+  const total = pensionFunds.reduce((s, p) => s + p.balance, 0)
+    + managersProducts.reduce((s, p) => s + (p.balance || 0), 0);
 
   const weightedFee = pensionFunds.reduce((s, p) => s + (p.feeFromAccumulation || 0) * p.balance, 0) / total;
   const weightedBestFee = pensionFunds.reduce((s, p) => {
@@ -157,8 +159,8 @@ export default function Pension() {
             <ProductCard
               key={p.id}
               name={p.name}
-              subtitle={`${p.provider}${p.coverage ? ` • כיסוי ${fmt(p.coverage)}` : ''}`}
-              amount={p.monthlyPremium != null ? `${fmt(p.monthlyPremium)}/חודש` : 'לא ידוע'}
+              subtitle={`${p.provider}${p.monthlyPremium != null ? ` • פרמיה ${fmt(p.monthlyPremium)}/חודש` : ''}`}
+              amount={p.balance != null ? fmt(p.balance) : 'צבירה לא ידועה'}
               borderBottom={i < managersProducts.length - 1}
               warning={(p.status && p.status !== 'פעיל') ? 'red' : p.warning}
               warningText={(p.status && p.status !== 'פעיל') ? 'לא פעיל' : p.warningText}

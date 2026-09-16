@@ -58,6 +58,7 @@ function mapInsuranceItemToCard(entry, isManagers) {
     name: entry.plan || entry.type,
     provider: entry.company,
     monthlyPremium: premium,
+    balance: isManagers && entry.tzvira ? parseFloat(entry.tzvira) : null,
     coverage,
     status: entry.status || null,
     warning: isTempRisk ? 'yellow' : null,
