@@ -6,6 +6,7 @@ import { getAgencyPensionFee, getAgencyGemelFee } from '../data/agencyFeeAgreeme
 import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
 import PendingDataScreen from '../components/PendingDataScreen';
 import ProductCard, { fmt } from '../components/ProductCard';
+import { statusWarning } from '../lib/statusWarning';
 
 const YOUNG_AGE_THRESHOLD = 50; // ponytail: כלל אצבע פשוט, לא נוסחה פיננסית מלאה
 
@@ -38,7 +39,7 @@ function PensionFundCard({ f, borderBottom }) {
   const currentFee = f.feeFromAccumulation ?? Infinity;
   const showAgencyDeal = agencyDeal && agencyDeal.feeFromAccumulation < currentFee;
 
-  const isInactive = f.status && f.status !== 'פעיל';
+  const { warning, warningText } = statusWarning(f);
 
   return (
     <ProductCard
@@ -46,8 +47,8 @@ function PensionFundCard({ f, borderBottom }) {
       subtitle={f.provider}
       amount={fmt(f.balance)}
       borderBottom={borderBottom}
-      warning={isInactive ? 'red' : null}
-      warningText={isInactive ? 'קרן לא פעילה' : null}
+      warning={warning}
+      warningText={warningText}
       details={
         <div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.8 }}>
@@ -162,8 +163,8 @@ export default function Pension() {
               subtitle={`${p.provider}${p.monthlyPremium != null ? ` • פרמיה ${fmt(p.monthlyPremium)}/חודש` : ''}`}
               amount={p.balance != null ? fmt(p.balance) : 'צבירה לא ידועה'}
               borderBottom={i < managersProducts.length - 1}
-              warning={(p.status && p.status !== 'פעיל') ? 'red' : p.warning}
-              warningText={(p.status && p.status !== 'פעיל') ? 'לא פעיל' : p.warningText}
+              warning={statusWarning(p).warning}
+              warningText={statusWarning(p).warningText}
               badge={p.pledgedTo ? 'משועבד' : null}
               details={
                 <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingRight: '18px', margin: 0, lineHeight: 1.8 }}>

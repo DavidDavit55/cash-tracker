@@ -2,6 +2,15 @@
 // port נאמן ל-Python parser (C:\Users\david\.claude\skills\masalka-har-bituach-parser\parsers.py)
 // המקור: CRM_DAVIT_FIN/backend/parsers.py - כל ה"תפסי" (gotchas) שם מתועדים ומיושמים כאן.
 
+// STATUS-POLISA-O-CHESHBON: קודים מאומתים מול קבצים אמיתיים - 1=פעיל, 8=ריסק זמני (הכיסוי הביטוחי
+// עדיין פעיל, רק ההפקדות מוקפאות), כל קוד אחר (למשל 2) = לא פעיל. אם יתגלה קוד נוסף שלא תואם,
+// עדיף לבדוק מול קובץ אמיתי מאשר לנחש.
+function policyStatusLabel(code) {
+  if (code === '1') return 'פעיל';
+  if (code === '8') return 'ריסק זמני';
+  return 'לא פעיל';
+}
+
 function directChildText(el, tag) {
   for (const child of el.children) {
     if (child.tagName === tag) return (child.textContent || '').trim();
@@ -104,13 +113,20 @@ function extractPension(root, result) {
   const fnameHe = lakoach ? directChildText(lakoach, 'SHEM-PRATI') : '';
   const lnameHe = lakoach ? directChildText(lakoach, 'SHEM-MISHPACHA') : '';
   const birth = getVal(root, 'TAARICH-LEYDA');
-  const company = getVal(root, 'SHEM-YATZRAN');
 
   if (!result.client && clientId) {
     result.client = { id: clientId, first: fnameHe, last: lnameHe, birth: fmtDate(birth) };
   }
 
-  const heshbonot = allDescendants(root, 'HeshbonOPolisa');
+  // חברה נקראת בתוך כל בלוק YeshutYatzran בנפרד - קובץ PNN יכול להכיל כמה קרנות מכמה חברות
+  // שונות, כשכל YeshutYatzran עוטף את ה-Mutzar/HeshbonOPolisa השייכים לו (SHEM-YATZRAN הוא
+  // אב-קדמון של Mutzar בעץ, לא צאצא שלו - אי אפשר לקרוא אותו מתוך ה-Mutzar עצמו).
+  const yatzranim = allDescendants(root, 'YeshutYatzran');
+  const groups = yatzranim.length
+    ? yatzranim.map(y => ({ company: directChildText(y, 'SHEM-YATZRAN'), heshbonot: allDescendants(y, 'HeshbonOPolisa') }))
+    : [{ company: getVal(root, 'SHEM-YATZRAN'), heshbonot: allDescendants(root, 'HeshbonOPolisa') }];
+
+  for (const { company, heshbonot } of groups) {
   const list = heshbonot.length ? heshbonot : [root];
   for (const heshbon of list) {
     const policyNum = getVal(heshbon, 'MISPAR-POLISA-O-HESHBON');
@@ -147,9 +163,10 @@ function extractPension(root, result) {
         monthlyPension, netReturn, returnYear,
         tracks: tracksFromMaslulim(heshbon),
         dmeiNihulHafkada: dmh, dmeiNihulTzvira: dmtAnnual,
-        status: status === '1' ? 'פעיל' : 'לא פעיל',
+        status: policyStatusLabel(status),
       });
     }
+  }
   }
 }
 
@@ -222,7 +239,7 @@ function extractStudyFund(root, result) {
           netReturn: net, returnYear, joinDate: fmtDate(join),
           liquidityDate, liquidityStatus,
           dmeiNihulTzvira: dnAnnual, dmeiNihulHafkada: dnH, tracks: tracksK,
-          status: (pstat && pstat !== '1') ? 'לא פעיל' : 'פעיל',
+          status: policyStatusLabel(pstat),
         });
       }
     }
@@ -245,10 +262,11 @@ function extractInsurance(root, result) {
     const prem = directChildText(heshbon, 'PREMYA-HODSHIT') || directChildText(heshbon, 'PREMYA-SHNATI')
       || getVal(heshbon, 'TOTAL-HAFKADA') || getVal(root, 'TOTAL-HAFKADA') || getVal(root, 'SCHUM-HAFRASHA') || '';
     if (!pnum) continue;
-    const isActive = !(pstat && pstat !== '1');
+    const status = policyStatusLabel(pstat);
+    const isActive = status !== 'לא פעיל'; // ריסק זמני - הכיסוי עדיין פעיל, רק ההפקדות מוקפאות
     const entry = {
       policyNum: pnum, company: companyIng, plan: tochnit || rootLabel, type: rootLabel,
-      status: isActive ? 'פעיל' : 'לא פעיל', joinDate: fmtDate(join), premium: isActive ? prem : '',
+      status, joinDate: fmtDate(join), premium: isActive ? prem : '',
     };
 
     if (isManagers) {

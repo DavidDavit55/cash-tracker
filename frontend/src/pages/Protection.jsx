@@ -4,6 +4,7 @@ import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
 import PendingDataScreen from '../components/PendingDataScreen';
 import ProductCard, { fmt } from '../components/ProductCard';
 import CoverageGapWidget from '../components/dashboard/CoverageGapWidget';
+import { statusWarning } from '../lib/statusWarning';
 
 export default function Protection() {
   const { pensionOverride, insuranceOverride, harBituachOverride, loading: maslakaLoading } = useMaslakaData() || {};
@@ -41,8 +42,8 @@ export default function Protection() {
             subtitle={`${p.provider}${p.coverage ? ` • כיסוי ${fmt(p.coverage)}` : ''}`}
             amount={p.monthlyPremium != null ? `${fmt(p.monthlyPremium)}/חודש` : 'לא ידוע'}
             borderBottom={i < insurancePolicies.length - 1}
-            warning={(p.status && p.status !== 'פעיל') ? 'red' : p.warning}
-            warningText={(p.status && p.status !== 'פעיל') ? 'לא פעיל' : p.warningText}
+            warning={statusWarning(p).warning}
+            warningText={statusWarning(p).warningText}
             badge={p.pledgedTo ? 'משועבד' : null}
             details={
               <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingRight: '18px', margin: 0, lineHeight: 1.8 }}>
