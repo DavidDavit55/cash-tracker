@@ -121,22 +121,24 @@ export default function Pension() {
       </div>
 
       <div className="chart-card">
-        <h3>דמי ניהול - מה שאתה משלם מול מה שאני יכול להשיג לך</h3>
+        <h3>דמי ניהול</h3>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
           <span>אתה משלם בממוצע</span>
           <b style={{ color: feeDiff > 0 ? '#ef4444' : '#22c55e' }}>{weightedFee.toFixed(2)}%</b>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '10px', color: 'var(--text-muted)' }}>
-          <span>מה שאני יכול להשיג לך</span>
-          <span>{weightedBestFee.toFixed(2)}%</span>
-        </div>
         {feeDiff > 0 ? (
-          <div style={{ background: '#fef2f2', color: '#b91c1c', borderRadius: '8px', padding: '8px 10px', fontSize: '0.8rem' }}>
-            אתה משלם {feeDiff.toFixed(2)}% יותר ממה שאני יכול להשיג לך — פוטנציאל חיסכון משמעותי לאורך שנים.
-          </div>
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '10px', color: 'var(--text-muted)' }}>
+              <span>מה שאני יכול להשיג לך</span>
+              <span>{weightedBestFee.toFixed(2)}%</span>
+            </div>
+            <div style={{ background: '#fef2f2', color: '#b91c1c', borderRadius: '8px', padding: '8px 10px', fontSize: '0.8rem' }}>
+              אתה משלם {feeDiff.toFixed(2)}% יותר ממה שאני יכול להשיג לך — פוטנציאל חיסכון משמעותי לאורך שנים.
+            </div>
+          </>
         ) : (
           <div style={{ background: '#f0fdf4', color: '#15803d', borderRadius: '8px', padding: '8px 10px', fontSize: '0.8rem' }}>
-            אתה כבר בתנאים הכי טובים שאני יכול להשיג — מצוין.
+            דמי ניהול טובים — אין לנו כרגע הצעה שמשפרת את זה.
           </div>
         )}
       </div>
