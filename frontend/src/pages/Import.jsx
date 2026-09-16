@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../hooks/useAuth';
+import JSZip from 'jszip';
 import { parseMaslakaFiles } from '../lib/maslakaParser';
 import { parseHarBituach, mapHarBituachRowToCard } from '../lib/harBituachParser';
 import { fmt } from '../components/ProductCard';
@@ -59,59 +60,62 @@ function mapInsuranceItemToCard(entry, isManagers) {
   };
 }
 
+// קובץ מסלקה אמיתי מגיע כ-ZIP עם XML + xls/pdf נלווים - שולפים רק את קובצי ה-XML.
+// עדיין תומך גם בהעלאת XML בודדים ישירות (למקרה שהם כבר חולצו).
+async function filesFromUploads(fileList) {
+  const out = [];
+  for (const f of fileList) {
+    if (f.name.toLowerCase().endsWith('.zip')) {
+      const zip = await JSZip.loadAsync(f);
+      for (const [name, entry] of Object.entries(zip.files)) {
+        if (entry.dir || !name.toLowerCase().endsWith('.xml')) continue;
+        out.push({ name, text: await entry.async('string') });
+      }
+    } else {
+      out.push({ name: f.name, text: await f.text() });
+    }
+  }
+  return out;
+}
+
 function MaslakaImportSection() {
   const [clients, setClients] = useState(null);
   const [clientId, setClientId] = useState('');
-  const [pensionStatus, setPensionStatus] = useState(null);
-  const [insuranceStatus, setInsuranceStatus] = useState(null);
+  const [maslakaStatus, setMaslakaStatus] = useState(null);
   const [harBituachStatus, setHarBituachStatus] = useState(null);
 
   useEffect(() => {
     api.get('/admin/clients').then(({ data }) => setClients(data)).catch(() => setClients([]));
   }, []);
 
-  const handlePensionFiles = async (e) => {
+  const handleMaslakaFiles = async (e) => {
     const fileList = Array.from(e.target.files || []);
     if (!fileList.length) return;
-    setPensionStatus('loading');
+    setMaslakaStatus('loading');
     try {
-      const files = await Promise.all(fileList.map(async f => ({ name: f.name, text: await f.text() })));
+      const files = await filesFromUploads(fileList);
       const result = parseMaslakaFiles(files);
-      const cards = [
+      const pensionCards = [
         ...result.pension.map(p => mapPensionItemToCard(p, 'pension')),
         ...result.study_fund.map(s => mapPensionItemToCard(s, 'study_fund')),
       ];
-      if (!cards.length) { setPensionStatus('error'); return; }
-      const targetId = clientId || clients?.find(c => c.id_number === result.client?.id)?.id;
-      if (!targetId) { setPensionStatus('no-client'); return; }
-      await api.put(`/admin/clients/${targetId}/financial-data`, {
-        pensionData: cards,
-        clientInfo: result.client || undefined,
-      });
-      if (!clientId && targetId) setClientId(targetId);
-      setPensionStatus({ count: cards.length });
-    } catch (err) {
-      console.error('maslaka pension import failed:', err); // eslint-disable-line no-console
-      setPensionStatus('error');
-    }
-  };
-
-  const handleInsuranceFiles = async (e) => {
-    const fileList = Array.from(e.target.files || []);
-    if (!fileList.length || !clientId) return;
-    setInsuranceStatus('loading');
-    try {
-      const files = await Promise.all(fileList.map(async f => ({ name: f.name, text: await f.text() })));
-      const result = parseMaslakaFiles(files);
-      const cards = [
+      const insuranceCards = [
         ...result.insurance.map(e2 => mapInsuranceItemToCard(e2, false)),
         ...result.managers_insurance.map(e2 => mapInsuranceItemToCard(e2, true)),
       ];
-      if (!cards.length) { setInsuranceStatus('error'); return; }
-      await api.put(`/admin/clients/${clientId}/financial-data`, { insuranceData: cards });
-      setInsuranceStatus({ count: cards.length });
-    } catch {
-      setInsuranceStatus('error');
+      if (!pensionCards.length && !insuranceCards.length) { setMaslakaStatus('error'); return; }
+      const targetId = clientId || clients?.find(c => c.id_number === result.client?.id)?.id;
+      if (!targetId) { setMaslakaStatus('no-client'); return; }
+      await api.put(`/admin/clients/${targetId}/financial-data`, {
+        pensionData: pensionCards.length ? pensionCards : undefined,
+        insuranceData: insuranceCards.length ? insuranceCards : undefined,
+        clientInfo: result.client || undefined,
+      });
+      if (!clientId) setClientId(targetId);
+      setMaslakaStatus({ pension: pensionCards.length, insurance: insuranceCards.length });
+    } catch (err) {
+      console.error('maslaka import failed:', err); // eslint-disable-line no-console
+      setMaslakaStatus('error');
     }
   };
 
@@ -158,26 +162,19 @@ function MaslakaImportSection() {
       </div>
 
       <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - גמל ופנסיה</div>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - גמל, פנסיה וביטוחים</div>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-          קובצי XML (CONSLTPNN / CONSLTKGM) — אם ת.ז בקובץ תואמת ללקוח רשום, ייבחר אוטומטית. אחרת בחר לקוח למעלה קודם.
+          קובץ ה-ZIP שמתקבל מהמסלקה (או קובצי XML בודדים אם כבר חילצת). אם ת.ז בקובץ תואמת ללקוח רשום, ייבחר אוטומטית — אחרת בחר לקוח למעלה קודם.
         </p>
-        <input type="file" accept=".xml" multiple onChange={handlePensionFiles} style={{ fontSize: '0.8rem' }} />
-        {pensionStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
-        {pensionStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו מוצרים בקובץ.</p>}
-        {pensionStatus === 'no-client' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>ת.ז מהקובץ לא נמצאה במערכת — בחר לקוח ידנית למעלה ונסה שוב.</p>}
-        {pensionStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>נשמרו {pensionStatus.count} מוצרים ללקוח — יופיעו במסך גמל/פנסיה שלו.</p>}
-      </div>
-
-      <div className="card" style={{ padding: '16px', marginBottom: '12px', opacity: clientId ? 1 : 0.5 }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🗂️ מסלקה - ביטוחים</div>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-          קובצי XML של ביטוחי חיים/מנהלים/בריאות (ING/INK/INP/INM).
-        </p>
-        <input type="file" accept=".xml" multiple disabled={!clientId} onChange={handleInsuranceFiles} style={{ fontSize: '0.8rem' }} />
-        {insuranceStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
-        {insuranceStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו פוליסות בקובץ.</p>}
-        {insuranceStatus?.count && <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>נשמרו {insuranceStatus.count} פוליסות ללקוח — יופיעו במסך הגנות שלו.</p>}
+        <input type="file" accept=".zip,.xml" multiple onChange={handleMaslakaFiles} style={{ fontSize: '0.8rem' }} />
+        {maslakaStatus === 'loading' && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>מעבד...</p>}
+        {maslakaStatus === 'error' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>לא נמצאו מוצרים או פוליסות בקובץ.</p>}
+        {maslakaStatus === 'no-client' && <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px' }}>ת.ז מהקובץ לא נמצאה במערכת — בחר לקוח ידנית למעלה ונסה שוב.</p>}
+        {maslakaStatus && maslakaStatus !== 'loading' && maslakaStatus !== 'error' && maslakaStatus !== 'no-client' && (
+          <p style={{ fontSize: '0.78rem', color: '#22c55e', marginTop: '6px' }}>
+            נשמרו {maslakaStatus.pension} מוצרי גמל/פנסיה ו-{maslakaStatus.insurance} פוליסות ביטוח ללקוח.
+          </p>
+        )}
       </div>
 
       <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>

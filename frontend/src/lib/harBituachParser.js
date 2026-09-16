@@ -8,9 +8,23 @@ function cell(row, i) {
   return String(v).trim();
 }
 
+// תיקון תפס אמיתי: קבצי הר ביטוח מגיעים עם !ref (טווח התאים המוצהר) שגוי -
+// מכסה רק את השורות הראשונות ומחתך בשקט את כל הנתונים האמיתיים. מחשבים טווח אמיתי מהתאים בפועל.
+function fixSheetRange(sheet) {
+  let maxRow = 0, maxCol = 0;
+  for (const key in sheet) {
+    if (key[0] === '!') continue;
+    const addr = XLSX.utils.decode_cell(key);
+    if (addr.r > maxRow) maxRow = addr.r;
+    if (addr.c > maxCol) maxCol = addr.c;
+  }
+  sheet['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxRow, c: maxCol } });
+}
+
 export function parseHarBituach(arrayBuffer) {
   const wb = XLSX.read(arrayBuffer, { type: 'array' });
   const sheet = wb.Sheets[wb.SheetNames[0]];
+  fixSheetRange(sheet);
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
 
   const policies = [];
