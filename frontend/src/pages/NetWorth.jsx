@@ -18,13 +18,18 @@ export default function NetWorth() {
     return <PendingDataScreen />;
   }
 
-  const { netWorth } = computeNetWorth();
+  const pensionTotal = hasRealData
+    ? (pensionOverride || []).reduce((s, p) => s + (p.balance || 0), 0)
+    : pensionFunds.reduce((s, p) => s + p.balance, 0);
+  const netWorth = hasRealData ? pensionTotal : computeNetWorth().netWorth;
 
-  const categories = [
-    { name: 'עו"ש, חיסכון ופיקדונות', total: accounts.reduce((s, a) => s + a.balance, 0), color: '#6366f1' },
-    { name: 'גמל ופנסיה', total: pensionFunds.reduce((s, p) => s + p.balance, 0), color: '#22c55e' },
-    { name: 'הלוואות ומשכנתא', total: -liabilities.reduce((s, l) => s + l.balance, 0), color: '#ef4444' },
-  ];
+  const categories = hasRealData
+    ? [{ name: 'גמל ופנסיה (ממסלקה)', total: pensionTotal, color: '#22c55e' }]
+    : [
+      { name: 'עו"ש, חיסכון ופיקדונות', total: accounts.reduce((s, a) => s + a.balance, 0), color: '#6366f1' },
+      { name: 'גמל ופנסיה', total: pensionTotal, color: '#22c55e' },
+      { name: 'הלוואות ומשכנתא', total: -liabilities.reduce((s, l) => s + l.balance, 0), color: '#ef4444' },
+    ];
 
   return (
     <div className="page">
@@ -51,17 +56,25 @@ export default function NetWorth() {
         ))}
       </div>
 
-      <div className="chart-card">
-        <h3>מגמת שווי נקי</h3>
-        <ResponsiveContainer width="100%" height={180} dir="ltr">
-          <LineChart data={netWorthHistory}>
-            <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 10 }} domain={['dataMin - 5000', 'dataMax + 5000']} />
-            <Tooltip formatter={v => fmt(v)} />
-            <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {hasRealData ? (
+        <div className="chart-card">
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            כרגע מוצגים רק נתוני גמל/פנסיה שהתקבלו מהמסלקה. חיבור עו"ש, חסכונות והלוואות בפועל יתווסף בהמשך.
+          </p>
+        </div>
+      ) : (
+        <div className="chart-card">
+          <h3>מגמת שווי נקי</h3>
+          <ResponsiveContainer width="100%" height={180} dir="ltr">
+            <LineChart data={netWorthHistory}>
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 10 }} domain={['dataMin - 5000', 'dataMax + 5000']} />
+              <Tooltip formatter={v => fmt(v)} />
+              <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }

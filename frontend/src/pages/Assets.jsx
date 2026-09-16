@@ -123,6 +123,19 @@ export default function Assets({ previewMode }) {
     return <PendingDataScreen />;
   }
 
+  if (hasRealData) {
+    return (
+      <div className="page">
+        <div className="page-header"><h2>עו"ש, חיסכון והתחייבויות</h2></div>
+        <div className="empty-state" style={{ marginTop: '20px' }}>
+          <div className="empty-icon">🏦</div>
+          <h3 style={{ marginBottom: '8px' }}>עוד לא מחובר</h3>
+          <p>חיבור עו"ש, חסכונות והלוואות בפועל יתווסף בהמשך. כרגע יש לך נתוני גמל/פנסיה והגנות בלבד.</p>
+        </div>
+      </div>
+    );
+  }
+
   const accountsTotal = accounts.reduce((s, a) => s + a.balance, 0);
   const liabilitiesTotal = liabilities.reduce((s, l) => s + l.balance, 0);
 

@@ -23,6 +23,7 @@ export default function AdminClientDetail() {
   const { user } = useAuth();
   const { id } = useParams();
   const [client, setClient] = useState(null);
+  const [financial, setFinancial] = useState(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -30,6 +31,9 @@ export default function AdminClientDetail() {
     api.get(`/admin/clients/${id}`)
       .then(({ data }) => setClient(data))
       .catch(err => setError(err.response?.data?.error || 'שגיאה בטעינת הלקוח'));
+    api.get(`/admin/clients/${id}/financial-data`)
+      .then(({ data }) => setFinancial(data))
+      .catch(() => setFinancial(null));
   }, [id]);
 
   if (user && import.meta.env.VITE_ADMIN_EMAIL && user.email !== import.meta.env.VITE_ADMIN_EMAIL) {
@@ -78,6 +82,45 @@ export default function AdminClientDetail() {
               <span>{fmtField(key, client[key])}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {client && (
+        <div className="card" style={{ padding: '16px', marginTop: '12px' }}>
+          <h3 style={{ marginBottom: '10px' }}>נתונים פיננסיים שיובאו</h3>
+          {!financial?.pension_data && !financial?.insurance_data && !financial?.har_bituach_data && (
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>עוד לא יובאו נתונים ללקוח הזה.</p>
+          )}
+          {financial?.pension_data && (
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>גמל ופנסיה ({financial.pension_data.length})</div>
+              {financial.pension_data.map(p => (
+                <div key={p.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '3px 0' }}>
+                  {p.name} · {p.provider} · ₪{Math.round(p.balance || 0).toLocaleString('he-IL')}
+                </div>
+              ))}
+            </div>
+          )}
+          {financial?.insurance_data && (
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>ביטוחים - מסלקה ({financial.insurance_data.length})</div>
+              {financial.insurance_data.map(p => (
+                <div key={p.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '3px 0' }}>
+                  {p.name} · {p.provider}{p.monthlyPremium != null ? ` · ₪${p.monthlyPremium}/חודש` : ''}
+                </div>
+              ))}
+            </div>
+          )}
+          {financial?.har_bituach_data && (
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>הר הביטוח ({financial.har_bituach_data.length})</div>
+              {financial.har_bituach_data.map(p => (
+                <div key={p.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '3px 0' }}>
+                  {p.name} · {p.provider}{p.monthlyPremium != null ? ` · ₪${p.monthlyPremium}/חודש` : ''}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
