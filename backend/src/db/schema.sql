@@ -101,3 +101,15 @@ CREATE TABLE IF NOT EXISTS client_financial_data (
 
 -- מיגרציה: har_bituach_data נוסף אחרי היצירה הראשונה של הטבלה
 ALTER TABLE client_financial_data ADD COLUMN IF NOT EXISTS har_bituach_data JSONB;
+
+-- קבצי מקור גולמיים (ZIP מסלקה / Excel הר ביטוח) - נשמרים כדי שתיקון עתידי בפרסר יוכל
+-- "לפרסר מחדש" קבצים שכבר הועלו, בלי לבקש מהלקוח או מהסוכן להעלות שוב.
+-- user_id NULL להר ביטוח (קובץ אחד משותף לכמה לקוחות, לא שייך למישהו ספציפי).
+CREATE TABLE IF NOT EXISTS raw_uploads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  source VARCHAR(20) NOT NULL,
+  filename VARCHAR(255),
+  file_data BYTEA NOT NULL,
+  uploaded_at TIMESTAMP DEFAULT NOW()
+);

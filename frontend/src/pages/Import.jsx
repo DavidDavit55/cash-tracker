@@ -3,87 +3,20 @@ import { Navigate } from 'react-router-dom';
 import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../hooks/useAuth';
-import JSZip from 'jszip';
-import { parseMaslakaFiles } from '../lib/maslakaParser';
-import { parseHarBituach, groupHarBituachByPolicy } from '../lib/harBituachParser';
-import { fmt } from '../components/ProductCard';
+import { filesFromUploads, processMaslakaFiles, processHarBituachBuffer } from '../lib/maslakaCards';
 
-function mapPensionItemToCard(item, kind) {
-  const tracks = item.tracks || [];
-  const mainTrack = tracks.length ? tracks.reduce((a, b) => (b.pct || 0) > (a.pct || 0) ? b : a) : null;
-  const balance = parseFloat(kind === 'pension' ? item.savings : item.tzvira);
-  return {
-    id: item.policyNum || `${kind}-${item.plan}-${item.company}`,
-    name: item.plan || item.company,
-    provider: item.company,
-    type: kind === 'pension' ? 'pension' : 'gemel',
-    productType: item.productType || null,
-    balance: isNaN(balance) ? 0 : balance,
-    feeFromDeposit: item.dmeiNihulHafkada ? parseFloat(item.dmeiNihulHafkada) : null,
-    feeFromAccumulation: item.dmeiNihulTzvira ? parseFloat(item.dmeiNihulTzvira) : null,
-    investmentTrack: mainTrack?.name || '',
-    stockExposure: null,
-    isDefaultTrack: /\d+\s*(שנה|ומטה|ומעלה)|תלוי גיל/.test(mainTrack?.name || ''),
-    return12m: item.netReturn ? parseFloat(item.netReturn) : null,
-    status: item.status || null,
-  };
-}
-
-function guessInsuranceType(label) {
-  if (!label) return 'other';
-  if (label.includes('בריאות')) return 'health';
-  if (label.includes('חיים')) return 'life';
-  if (label.includes('מנהלים')) return 'managers';
-  if (label.includes('תאונות')) return 'accident';
-  if (label.includes('ריסק')) return 'life';
-  return 'other';
-}
-
-function mapInsuranceItemToCard(entry, isManagers) {
-  const premium = parseFloat(entry.premium) || null;
-  const coverageItems = [];
-  if (isManagers) {
-    if (entry.riskAmount) coverageItems.push(`ריסק/חיים — כיסוי ${fmt(parseFloat(entry.riskAmount))}`);
-    if (entry.akeMonthly) coverageItems.push(`אובדן כושר עבודה — קצבה חודשית ${fmt(parseFloat(entry.akeMonthly))}`);
-    if (entry.track) coverageItems.push(`מסלול השקעה: ${entry.track}`);
-    if (entry.tzvira) coverageItems.push(`צבירה: ${fmt(parseFloat(entry.tzvira))}`);
-  } else if (entry.pledgedTo) {
-    coverageItems.push(`משועבד ל: ${entry.pledgedTo}`);
+// שומר עותק של קובץ המקור הגולמי ב-DB כדי ש"פרסר מחדש את כולם" יוכל להשתמש בו בעתיד -
+// לא חוסם את ההעלאה עצמה אם זה נכשל.
+async function saveRawUpload(file, source, userId) {
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('source', source);
+    if (userId) fd.append('userId', userId);
+    await api.post('/admin/raw-uploads', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  } catch (err) {
+    console.error('raw upload save failed:', err); // eslint-disable-line no-console
   }
-  const coverage = entry.sumInsured ? parseFloat(entry.sumInsured) : (entry.riskAmount ? parseFloat(entry.riskAmount) : null);
-  const isTempRisk = /ריסק זמני/.test(`${entry.plan || ''} ${entry.type || ''}`);
-  return {
-    id: entry.policyNum || `${entry.company}-${entry.plan}`,
-    type: guessInsuranceType(entry.type),
-    name: entry.plan || entry.type,
-    provider: entry.company,
-    monthlyPremium: premium,
-    balance: isManagers && entry.tzvira ? parseFloat(entry.tzvira) : null,
-    coverage,
-    status: entry.status || null,
-    warning: isTempRisk ? 'yellow' : null,
-    warningText: isTempRisk ? 'ריסק זמני' : null,
-    pledgedTo: entry.pledgedTo || null,
-    coverageItems: coverageItems.length ? coverageItems : ['אין פרטי כיסוי נוספים בקובץ המסלקה'],
-  };
-}
-
-// קובץ מסלקה אמיתי מגיע כ-ZIP עם XML + xls/pdf נלווים - שולפים רק את קובצי ה-XML.
-// עדיין תומך גם בהעלאת XML בודדים ישירות (למקרה שהם כבר חולצו).
-async function filesFromUploads(fileList) {
-  const out = [];
-  for (const f of fileList) {
-    if (f.name.toLowerCase().endsWith('.zip')) {
-      const zip = await JSZip.loadAsync(f);
-      for (const [name, entry] of Object.entries(zip.files)) {
-        if (entry.dir || !name.toLowerCase().endsWith('.xml')) continue;
-        out.push({ name, text: await entry.async('string') });
-      }
-    } else {
-      out.push({ name: f.name, text: await f.text() });
-    }
-  }
-  return out;
 }
 
 function MaslakaImportSection() {
@@ -102,23 +35,16 @@ function MaslakaImportSection() {
     setMaslakaStatus('loading');
     try {
       const files = await filesFromUploads(fileList);
-      const result = parseMaslakaFiles(files);
-      const pensionCards = [
-        ...result.pension.map(p => mapPensionItemToCard(p, 'pension')),
-        ...result.study_fund.map(s => mapPensionItemToCard(s, 'study_fund')),
-      ];
-      const insuranceCards = [
-        ...result.insurance.map(e2 => mapInsuranceItemToCard(e2, false)),
-        ...result.managers_insurance.map(e2 => mapInsuranceItemToCard(e2, true)),
-      ];
+      const { pensionCards, insuranceCards, clientInfo } = processMaslakaFiles(files);
       if (!pensionCards.length && !insuranceCards.length) { setMaslakaStatus('error'); return; }
-      const targetId = clientId || clients?.find(c => c.id_number === result.client?.id)?.id;
+      const targetId = clientId || clients?.find(c => c.id_number === clientInfo?.id)?.id;
       if (!targetId) { setMaslakaStatus('no-client'); return; }
       await api.put(`/admin/clients/${targetId}/financial-data`, {
         pensionData: pensionCards.length ? pensionCards : undefined,
         insuranceData: insuranceCards.length ? insuranceCards : undefined,
-        clientInfo: result.client || undefined,
+        clientInfo: clientInfo || undefined,
       });
+      saveRawUpload(fileList[0], 'maslaka', targetId);
       if (!clientId) setClientId(targetId);
       setMaslakaStatus({ pension: pensionCards.length, insurance: insuranceCards.length });
     } catch (err) {
@@ -133,25 +59,19 @@ function MaslakaImportSection() {
     setHarBituachStatus('loading');
     try {
       const buf = await file.arrayBuffer();
-      const rows = parseHarBituach(buf);
-      if (!rows.length) { setHarBituachStatus('error'); return; }
-
-      const byTz = new Map();
-      for (const row of rows) {
-        if (!byTz.has(row.tz)) byTz.set(row.tz, []);
-        byTz.get(row.tz).push(row);
-      }
+      const cardsByTz = processHarBituachBuffer(buf);
+      if (!cardsByTz.size) { setHarBituachStatus('error'); return; }
 
       let matched = 0;
       let unmatched = 0;
-      await Promise.all(Array.from(byTz.entries()).map(async ([tz, tzRows]) => {
+      await Promise.all(Array.from(cardsByTz.entries()).map(async ([tz, cards]) => {
         const client = clients?.find(c => c.id_number === tz);
         if (!client) { unmatched++; return; }
         matched++;
-        const cards = groupHarBituachByPolicy(tzRows);
         await api.put(`/admin/clients/${client.id}/financial-data`, { harBituachData: cards });
       }));
 
+      saveRawUpload(file, 'har_bituach', null);
       setHarBituachStatus({ matched, unmatched });
     } catch (err) {
       console.error('har bituach import failed:', err); // eslint-disable-line no-console
@@ -201,6 +121,76 @@ function MaslakaImportSection() {
         )}
       </div>
     </>
+  );
+}
+
+function bufferToFileLike(name, arrayBuffer) {
+  return {
+    name,
+    arrayBuffer: async () => arrayBuffer,
+    text: async () => new TextDecoder('utf-8').decode(arrayBuffer),
+  };
+}
+
+// מריץ את הפרסר העדכני מחדש על כל קבצי המקור השמורים ומעדכן את כל הלקוחות בבת אחת -
+// לתיקון באג בפרסר בלי לבקש מאף לקוח או מהסוכן להעלות שוב.
+function ReprocessAllSection() {
+  const [status, setStatus] = useState(null);
+
+  const runAll = async () => {
+    setStatus('running');
+    try {
+      const [{ data: uploads }, { data: clients }] = await Promise.all([
+        api.get('/admin/raw-uploads'),
+        api.get('/admin/clients'),
+      ]);
+      let done = 0, errors = 0;
+      for (const u of uploads) {
+        try {
+          const { data: buf } = await api.get(`/admin/raw-uploads/${u.id}/file`, { responseType: 'arraybuffer' });
+          if (u.source === 'maslaka' && u.user_id) {
+            const files = await filesFromUploads([bufferToFileLike(u.filename, buf)]);
+            const { pensionCards, insuranceCards, clientInfo } = processMaslakaFiles(files);
+            await api.put(`/admin/clients/${u.user_id}/financial-data`, {
+              pensionData: pensionCards.length ? pensionCards : undefined,
+              insuranceData: insuranceCards.length ? insuranceCards : undefined,
+              clientInfo: clientInfo || undefined,
+            });
+          } else if (u.source === 'har_bituach') {
+            const cardsByTz = processHarBituachBuffer(buf);
+            for (const [tz, cards] of cardsByTz) {
+              const client = clients.find(c => c.id_number === tz);
+              if (client) await api.put(`/admin/clients/${client.id}/financial-data`, { harBituachData: cards });
+            }
+          }
+          done++;
+        } catch (err) {
+          console.error('reprocess failed for upload', u.id, err); // eslint-disable-line no-console
+          errors++;
+        }
+      }
+      setStatus({ done, total: uploads.length, errors });
+    } catch (err) {
+      console.error('reprocess-all failed:', err); // eslint-disable-line no-console
+      setStatus({ done: 0, total: 0, errors: 1, fatal: true });
+    }
+  };
+
+  return (
+    <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
+      <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>🔄 פרסר מחדש את כולם</div>
+      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+        מריץ את הפרסר העדכני מחדש על כל קבצי המקור ששמורים (מסלקה + הר ביטוח) ומעדכן את כל הלקוחות. להריץ אחרי תיקון באג בפרסר.
+      </p>
+      <button className="btn-primary" onClick={runAll} disabled={status === 'running'}>
+        {status === 'running' ? 'מריץ מחדש...' : 'פרסר מחדש את כולם'}
+      </button>
+      {status && status !== 'running' && (
+        <p style={{ fontSize: '0.78rem', color: status.errors ? '#ef4444' : '#22c55e', marginTop: '6px' }}>
+          {status.fatal ? 'שגיאה כללית בהרצה.' : `הושלם: ${status.done}/${status.total} קבצים${status.errors ? `, ${status.errors} נכשלו` : ''}.`}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -357,6 +347,9 @@ export default function Import() {
 
       <h2 style={{ fontSize: '1.1rem', margin: '20px 0 8px' }}>ייבוא מסלקה (לך בלבד — לא מוצג ללקוח)</h2>
       <MaslakaImportSection />
+
+      <h2 style={{ fontSize: '1.1rem', margin: '20px 0 8px' }}>תחזוקה</h2>
+      <ReprocessAllSection />
     </div>
   );
 }

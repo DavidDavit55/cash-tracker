@@ -1,8 +1,10 @@
 import { Router } from 'express';
+import multer from 'multer';
 import pool from '../db/pool.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 function requireAdmin(req, res, next) {
   if (!process.env.ADMIN_EMAIL || req.user.email !== process.env.ADMIN_EMAIL) {
@@ -108,6 +110,49 @@ router.delete('/clients/:id/financial-data', authMiddleware, requireAdmin, async
     }
     await pool.query('DELETE FROM client_financial_data WHERE user_id=$1', [req.params.id]);
     res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+// קבצי מקור גולמיים - נשמרים לצורך "פרסר מחדש את כולם" אחרי תיקון עתידי בפרסר.
+router.post('/raw-uploads', authMiddleware, requireAdmin, upload.single('file'), async (req, res) => {
+  const { source, userId } = req.body;
+  if (!req.file || !source) return res.status(400).json({ error: 'חסר קובץ או source' });
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO raw_uploads (user_id, source, filename, file_data) VALUES ($1,$2,$3,$4) RETURNING id`,
+      [userId || null, source, req.file.originalname, req.file.buffer]
+    );
+    res.json({ id: rows[0].id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+router.get('/raw-uploads', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT ru.id, ru.user_id, ru.source, ru.filename, ru.uploaded_at, u.name AS user_name
+       FROM raw_uploads ru LEFT JOIN users u ON u.id = ru.user_id
+       ORDER BY ru.uploaded_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
+router.get('/raw-uploads/:id/file', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT filename, file_data FROM raw_uploads WHERE id=$1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'לא נמצא' });
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(rows[0].filename || 'file')}"`);
+    res.send(rows[0].file_data);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'שגיאת שרת' });
