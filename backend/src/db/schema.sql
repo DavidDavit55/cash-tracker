@@ -112,6 +112,7 @@ ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS consent_har_bituach BOOLEAN
 ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signature_data TEXT;
 ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signed_at TIMESTAMP;
 ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS signed_ip VARCHAR(45);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT FALSE;
 
 -- קבצי מקור גולמיים (ZIP מסלקה / Excel הר ביטוח) - נשמרים כדי שתיקון עתידי בפרסר יוכל
 -- "לפרסר מחדש" קבצים שכבר הועלו, בלי לבקש מהלקוח או מהסוכן להעלות שוב.

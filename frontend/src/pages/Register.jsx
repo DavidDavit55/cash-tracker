@@ -53,6 +53,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   const [account, setAccount] = useState({ name: '', email: '', password: '', phone: '' });
+  const [otpStage, setOtpStage] = useState('idle'); // idle | sent
+  const [otpCode, setOtpCode] = useState('');
   const [idInfo, setIdInfo] = useState({ id_number: '', birth_date: '', id_issue_date: '', marital_status: '', monthly_income: '' });
   const [answers, setAnswers] = useState({});
   const [consents, setConsents] = useState({ consent_maslaka: false, consent_insurance_poa: false, consent_har_bituach: false });
@@ -65,9 +67,24 @@ export default function Register() {
     setLoading(true);
     try {
       await register(account.name, account.email, account.password);
-      setStep(2);
+      await api.post('/phone-verify/send', { phone: account.phone });
+      setOtpStage('sent');
     } catch (err) {
       setError(err.response?.data?.error || 'שגיאה בהרשמה');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitOtp = async e => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await api.post('/phone-verify/check', { phone: account.phone, code: otpCode });
+      setStep(2);
+    } catch (err) {
+      setError(err.response?.data?.error || 'קוד שגוי');
     } finally {
       setLoading(false);
     }
@@ -128,7 +145,20 @@ export default function Register() {
         <h1>NETWORTH</h1>
         <p className="auth-subtitle">שלב {step} מתוך 4</p>
 
-        {step === 1 && (
+        {step === 1 && otpStage === 'sent' && (
+          <form onSubmit={submitOtp}>
+            <div className="form-group">
+              <label>קוד אימות נשלח ב-SMS ל-{account.phone}</label>
+              <input value={otpCode} onChange={e => setOtpCode(e.target.value)} required placeholder="123456" inputMode="numeric" />
+            </div>
+            {error && <div className="form-error">{error}</div>}
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'מאמת...' : 'אמת קוד'}
+            </button>
+          </form>
+        )}
+
+        {step === 1 && otpStage === 'idle' && (
           <form onSubmit={submitAccount}>
             <div className="form-group">
               <label>שם מלא</label>
