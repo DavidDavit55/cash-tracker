@@ -107,15 +107,6 @@ export default function Pension() {
   const total = pensionFunds.reduce((s, p) => s + p.balance, 0)
     + managersProducts.reduce((s, p) => s + (p.balance || 0), 0);
 
-  const weightedFee = pensionFunds.reduce((s, p) => s + (p.feeFromAccumulation || 0) * p.balance, 0) / total;
-  const weightedBestFee = pensionFunds.reduce((s, p) => {
-    const deal = getBestDealForFund(p);
-    return s + (deal?.feeFromAccumulation ?? p.feeFromAccumulation ?? 0) * p.balance;
-  }, 0) / total;
-  // מעוגל לפני ההשוואה - הפרש כמו 0.0001% (רעש נקודה צפה מהחישוב המשוקלל) לא נחשב שיפור אמיתי,
-  // ובלי זה הקארד היה מציג "אתה משלם 0.00% יותר" - כלומר אין שום שיפור, אבל בכל זאת מציג קארד.
-  const feeDiff = Math.round((weightedFee - weightedBestFee) * 100) / 100;
-
   return (
     <div className="page">
       <div className="page-header">
@@ -131,23 +122,6 @@ export default function Pension() {
         <div className="summary-amount" style={{ fontSize: '1.8rem' }}>{fmt(total)}</div>
         <div className="summary-label">סך הכל צבור</div>
       </div>
-
-      {feeDiff > 0 && (
-        <div className="chart-card">
-          <h3>דמי ניהול</h3>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
-            <span>אתה משלם בממוצע</span>
-            <b style={{ color: '#ef4444' }}>{weightedFee.toFixed(2)}%</b>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '10px', color: 'var(--text-muted)' }}>
-            <span>מה שאני יכול להשיג לך</span>
-            <span>{weightedBestFee.toFixed(2)}%</span>
-          </div>
-          <div style={{ background: '#fef2f2', color: '#b91c1c', borderRadius: '8px', padding: '8px 10px', fontSize: '0.8rem' }}>
-            אתה משלם {feeDiff.toFixed(2)}% יותר ממה שאני יכול להשיג לך — פוטנציאל חיסכון משמעותי לאורך שנים.
-          </div>
-        </div>
-      )}
 
       <div className="chart-card" style={{ padding: '14px 0' }}>
         {pensionFunds.map((f, i) => (
