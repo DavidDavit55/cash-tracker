@@ -15,6 +15,7 @@ import budgetsRoutes from './routes/budgets.js';
 import importRoutes from './routes/import.js';
 import incomesRoutes from './routes/incomes.js';
 import whatsappRoutes from './routes/whatsapp.js';
+import clientProfileRoutes from './routes/clientProfile.js';
 import { initWhatsApp } from './services/whatsapp.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -32,6 +33,7 @@ app.use('/api/budgets', budgetsRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/incomes', incomesRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/client-profile', clientProfileRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
