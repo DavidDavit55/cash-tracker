@@ -7,6 +7,27 @@ import { netWorthHistory, accounts, liabilities, pensionFunds, computeNetWorth }
 
 const fmt = (n) => `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`;
 
+// לכל פריט גמל/פנסיה יש בדיוק קטגוריה אחת מתוך אלה. חלק (פנסיה תקציבית, פוליסת חיסכון) לא
+// ניתנות לזיהוי מהמסלקה בכלל (פנסיה תקציבית משולמת ישירות מתקציב המדינה, בלי קרן צבירה) -
+// יוצגו ב-0 באמת, לא ניחוש.
+const PENSION_CATEGORY_ORDER = [
+  'פנסיה מקיפה', 'פנסיה משלימה', 'פנסיה תקציבית', 'קרן השתלמות', 'ביטוח מנהלים',
+  'קופת גמל תגמולים ופיצויים', 'קופת גמל להשקעה', 'חיסכון לכל ילד', 'פוליסת חיסכון',
+];
+
+function pensionCategoryOf(p) {
+  if (p.type === 'managers') return 'ביטוח מנהלים';
+  if (p.type === 'pension') {
+    if (p.pensionType === 'פנסיה משלימה כללית') return 'פנסיה משלימה';
+    return 'פנסיה מקיפה';
+  }
+  if (p.productType === 'קרן השתלמות') return 'קרן השתלמות';
+  if (p.productType === 'קופת גמל') return 'קופת גמל תגמולים ופיצויים';
+  if (p.productType === 'גמל להשקעה') return 'קופת גמל להשקעה';
+  if (p.productType === 'חיסכון לכל ילד') return 'חיסכון לכל ילד';
+  return 'פוליסת חיסכון';
+}
+
 export default function NetWorth() {
   const { user } = useAuth();
   const { pensionOverride, insuranceOverride, harBituachOverride, loading: maslakaLoading } = useMaslakaData() || {};
@@ -18,13 +39,19 @@ export default function NetWorth() {
     return <PendingDataScreen />;
   }
 
+  const managersProducts = [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type === 'managers');
+  const pensionItems = [...(pensionOverride || []), ...managersProducts];
   const pensionTotal = hasRealData
-    ? (pensionOverride || []).reduce((s, p) => s + (p.balance || 0), 0)
+    ? pensionItems.reduce((s, p) => s + (p.balance || 0), 0)
     : pensionFunds.reduce((s, p) => s + p.balance, 0);
   const netWorth = hasRealData ? pensionTotal : computeNetWorth().netWorth;
 
   const categories = hasRealData
-    ? [{ name: 'גמל ופנסיה (ממסלקה)', total: pensionTotal, color: '#22c55e' }]
+    ? PENSION_CATEGORY_ORDER.map(name => ({
+        name,
+        total: pensionItems.filter(p => pensionCategoryOf(p) === name).reduce((s, p) => s + (p.balance || 0), 0),
+        color: '#22c55e',
+      }))
     : [
       { name: 'עו"ש, חיסכון ופיקדונות', total: accounts.reduce((s, a) => s + a.balance, 0), color: '#6366f1' },
       { name: 'גמל ופנסיה', total: pensionTotal, color: '#22c55e' },

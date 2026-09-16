@@ -10,8 +10,9 @@ export default function Layout({ children, previewMode }) {
   const { pensionOverride, insuranceOverride, harBituachOverride } = useMaslakaData() || {};
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
   const showMockAmount = previewMode || import.meta.env.DEV || hasRealData;
+  const managersProducts = [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type === 'managers');
   const netWorthK = hasRealData
-    ? Math.round((pensionOverride || []).reduce((s, p) => s + (p.balance || 0), 0) / 1000)
+    ? Math.round([...(pensionOverride || []), ...managersProducts].reduce((s, p) => s + (p.balance || 0), 0) / 1000)
     : Math.round(computeNetWorth().netWorth / 1000);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
