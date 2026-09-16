@@ -38,12 +38,16 @@ function PensionFundCard({ f, borderBottom }) {
   const currentFee = f.feeFromAccumulation ?? Infinity;
   const showAgencyDeal = agencyDeal && agencyDeal.feeFromAccumulation < currentFee;
 
+  const isInactive = f.status && f.status !== 'פעיל';
+
   return (
     <ProductCard
       name={f.name}
       subtitle={f.provider}
       amount={fmt(f.balance)}
       borderBottom={borderBottom}
+      warning={isInactive ? 'red' : null}
+      warningText={isInactive ? 'קרן לא פעילה' : null}
       details={
         <div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.8 }}>
@@ -156,6 +160,9 @@ export default function Pension() {
               subtitle={`${p.provider}${p.coverage ? ` • כיסוי ${fmt(p.coverage)}` : ''}`}
               amount={p.monthlyPremium != null ? `${fmt(p.monthlyPremium)}/חודש` : 'לא ידוע'}
               borderBottom={i < managersProducts.length - 1}
+              warning={(p.status && p.status !== 'פעיל') ? 'red' : p.warning}
+              warningText={(p.status && p.status !== 'פעיל') ? 'לא פעיל' : p.warningText}
+              badge={p.pledgedTo ? 'משועבד' : null}
               details={
                 <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingRight: '18px', margin: 0, lineHeight: 1.8 }}>
                   {p.coverageItems.map((c, j) => <li key={j}>{c}</li>)}

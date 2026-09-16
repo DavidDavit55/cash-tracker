@@ -25,6 +25,7 @@ function mapPensionItemToCard(item, kind) {
     stockExposure: null,
     isDefaultTrack: /\d+\s*(שנה|ומטה|ומעלה)|תלוי גיל/.test(mainTrack?.name || ''),
     return12m: item.netReturn ? parseFloat(item.netReturn) : null,
+    status: item.status || null,
   };
 }
 
@@ -50,6 +51,7 @@ function mapInsuranceItemToCard(entry, isManagers) {
     coverageItems.push(`משועבד ל: ${entry.pledgedTo}`);
   }
   const coverage = entry.sumInsured ? parseFloat(entry.sumInsured) : (entry.riskAmount ? parseFloat(entry.riskAmount) : null);
+  const isTempRisk = /ריסק זמני/.test(`${entry.plan || ''} ${entry.type || ''}`);
   return {
     id: entry.policyNum || `${entry.company}-${entry.plan}`,
     type: guessInsuranceType(entry.type),
@@ -57,6 +59,10 @@ function mapInsuranceItemToCard(entry, isManagers) {
     provider: entry.company,
     monthlyPremium: premium,
     coverage,
+    status: entry.status || null,
+    warning: isTempRisk ? 'yellow' : null,
+    warningText: isTempRisk ? 'ריסק זמני' : null,
+    pledgedTo: entry.pledgedTo || null,
     coverageItems: coverageItems.length ? coverageItems : ['אין פרטי כיסוי נוספים בקובץ המסלקה'],
   };
 }

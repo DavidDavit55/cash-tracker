@@ -90,6 +90,8 @@ export function groupHarBituachByPolicy(rows) {
   return Array.from(byPolicy.entries()).map(([policyNum, policyRows]) => {
     const first = policyRows[0];
     const monthlyPremium = Math.round(policyRows.reduce((s, r) => s + monthlyOf(r), 0));
+    const allText = policyRows.map(r => `${r.product} ${r.classification} ${r.notes}`).join(' ');
+    const isTempRisk = /ריסק זמני/.test(allText);
     return {
       id: policyNum,
       type: guessType(`${first.section} ${first.branch} ${first.product}`),
@@ -97,6 +99,8 @@ export function groupHarBituachByPolicy(rows) {
       provider: first.company,
       monthlyPremium,
       coverage: null,
+      warning: isTempRisk ? 'yellow' : null,
+      warningText: isTempRisk ? 'ריסק זמני' : null,
       coverageItems: policyRows.map(r => {
         const label = [r.subBranch, r.product].filter(Boolean).join(' - ') || 'כיסוי';
         const amount = parseFloat(r.premium) ? `₪${r.premium}${r.premiumType ? ` (${r.premiumType})` : ''}` : '';

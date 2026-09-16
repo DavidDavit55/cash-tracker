@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 
 export const fmt = (n) => `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`;
 
+const WARNING_COLORS = { red: '#ef4444', yellow: '#f59e0b' };
+
 // כרטיס מוצר עם accordion לפרטים נוספים + CTA (קישור וואטסאפ או ניווט פנימי)
-export default function ProductCard({ name, subtitle, amount, amountColor = 'var(--text)', details, ctaLabel, ctaHref, ctaOnClick, borderBottom = true }) {
+// warning: 'red' | 'yellow' - משולש אזהרה ליד השם (לדוגמה: קרן לא פעילה / ריסק זמני)
+// badge: תג טקסט קטן ליד השם (לדוגמה: "משועבד")
+export default function ProductCard({ name, subtitle, amount, amountColor = 'var(--text)', details, ctaLabel, ctaHref, ctaOnClick, borderBottom = true, warning, warningText, badge }) {
   const [open, setOpen] = useState(false);
   const hasExtra = !!details || !!ctaLabel;
 
@@ -17,10 +21,15 @@ export default function ProductCard({ name, subtitle, amount, amountColor = 'var
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
           {hasExtra && <span style={{ color: '#94a3b8' }}>{open ? <ChevronUp size={13}/> : <ChevronDown size={13}/>}</span>}
-          <span style={{ fontWeight: 500, flex: 1, textAlign: 'right', margin: '0 6px' }}>{name}</span>
+          <span style={{ fontWeight: 500, flex: 1, textAlign: 'right', margin: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px' }}>
+            {warning && <AlertTriangle size={14} color={WARNING_COLORS[warning]} title={warningText}/>}
+            {name}
+            {badge && <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#92400e', background: '#fef3c7', borderRadius: '4px', padding: '1px 6px' }}>{badge}</span>}
+          </span>
           <span style={{ fontWeight: 700, color: amountColor, direction: 'ltr' }}>{amount}</span>
         </div>
         {subtitle && <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '3px', textAlign: 'right' }}>{subtitle}</div>}
+        {warningText && <div style={{ color: WARNING_COLORS[warning], fontSize: '0.72rem', marginTop: '3px', textAlign: 'right' }}>{warningText}</div>}
       </button>
 
       {open && (

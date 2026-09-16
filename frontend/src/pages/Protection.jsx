@@ -41,6 +41,9 @@ export default function Protection() {
             subtitle={`${p.provider}${p.coverage ? ` • כיסוי ${fmt(p.coverage)}` : ''}`}
             amount={p.monthlyPremium != null ? `${fmt(p.monthlyPremium)}/חודש` : 'לא ידוע'}
             borderBottom={i < insurancePolicies.length - 1}
+            warning={(p.status && p.status !== 'פעיל') ? 'red' : p.warning}
+            warningText={(p.status && p.status !== 'פעיל') ? 'לא פעיל' : p.warningText}
+            badge={p.pledgedTo ? 'משועבד' : null}
             details={
               <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingRight: '18px', margin: 0, lineHeight: 1.8 }}>
                 {p.coverageItems.map((c, j) => <li key={j}>{c}</li>)}
