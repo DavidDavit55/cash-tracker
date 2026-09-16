@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
@@ -23,6 +23,8 @@ const QUESTIONS = [
 
 const MARITAL_OPTIONS = ['רווק/ה', 'נשוי/אה', 'גרוש/ה', 'אלמן/ה'];
 const INCOME_OPTIONS = ['עד 8,000 ₪', '8,000-15,000 ₪', 'מעל 15,000 ₪'];
+
+const PROGRESS_KEY = 'networth_register_progress';
 
 const AGENT_NAME = 'דוד דויטשוילי';
 const AGENT_LICENSE = 'L-00138948';
@@ -60,6 +62,29 @@ export default function Register() {
   const [consents, setConsents] = useState({ consent_maslaka: false, consent_insurance_poa: false, consent_har_bituach: false });
   const [signature, setSignature] = useState(null);
   const [openConsent, setOpenConsent] = useState(null);
+
+  // אם המשתמש כבר עבר שלב 1 (יש token, טלפון כבר אומת) ויצא באמצע - משחזרים את מה שכבר
+  // מילא במקום להכריח אותו למלא הכל מחדש; רק שלב 1 (שם/טלפון/OTP) לא ניתן לדילוג כי אין
+  // דרך לדעת בלי לפנות לשרת אם הטלפון עדיין תקף.
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null');
+      if (!saved) return;
+      setStep(saved.step || 1);
+      setAccount(saved.account || account);
+      setIdInfo(saved.idInfo || idInfo);
+      setAnswers(saved.answers || {});
+      setConsents(saved.consents || consents);
+    } catch { /* localStorage פגום - מתעלמים, ההרשמה פשוט מתחילה מחדש */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (step > 1) {
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify({ step, account, idInfo, answers, consents }));
+    }
+  }, [step, account, idInfo, answers, consents]);
 
   const submitAccount = async e => {
     e.preventDefault();
@@ -130,6 +155,7 @@ export default function Register() {
         ...consents,
         signature_data: signature,
       });
+      localStorage.removeItem(PROGRESS_KEY);
       nav('/');
     } catch (err) {
       setError(err.response?.data?.error || 'שגיאה בשמירת הפרופיל');
