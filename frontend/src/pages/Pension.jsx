@@ -26,11 +26,11 @@ function PensionFundCard({ f, borderBottom }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetchRealFundData(f.provider, f.type)
+    fetchRealFundData(f.provider, f.type, f.investmentTrack, f.name)
       .then(data => { if (!cancelled) { setReal(data); setRealStatus(data ? 'ok' : 'none'); } })
       .catch(() => { if (!cancelled) setRealStatus('none'); });
     return () => { cancelled = true; };
-  }, [f.provider, f.type]);
+  }, [f.provider, f.type, f.investmentTrack, f.name]);
 
   const stockExposure = real?.stockExposurePercent ?? f.stockExposure;
   const showTrackAdvisory = f.isDefaultTrack && userProfile.age < YOUNG_AGE_THRESHOLD;
