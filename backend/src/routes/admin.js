@@ -97,4 +97,21 @@ router.put('/clients/:id/financial-data', authMiddleware, requireAdmin, async (r
   }
 });
 
+// מחיקת נתונים פיננסיים - מותר רק ליוזר הטסטינג הייעודי, אף פעם לא ללקוח אמיתי.
+const TEST_CLIENT_EMAIL = 'test-claude-verify4@davit-fin.co.il';
+
+router.delete('/clients/:id/financial-data', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { rows: userRows } = await pool.query('SELECT email FROM users WHERE id=$1', [req.params.id]);
+    if (!userRows[0] || userRows[0].email !== TEST_CLIENT_EMAIL) {
+      return res.status(403).json({ error: 'מחיקה מותרת רק ליוזר הטסטינג' });
+    }
+    await pool.query('DELETE FROM client_financial_data WHERE user_id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאת שרת' });
+  }
+});
+
 export default router;

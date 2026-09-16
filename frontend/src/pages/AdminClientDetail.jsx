@@ -18,6 +18,7 @@ const DATE_FIELDS = new Set(['birth_date', 'id_issue_date']);
 const fmtField = (key, val) => (val && DATE_FIELDS.has(key)) ? new Date(val).toLocaleDateString('he-IL') : (val || '—');
 
 const STATUS_OPTIONS = ['ממתין למשיכת מסלקה', 'נוצר קשר', 'הושלם'];
+const TEST_CLIENT_EMAIL = 'test-claude-verify4@davit-fin.co.il';
 
 export default function AdminClientDetail() {
   const { user } = useAuth();
@@ -46,6 +47,13 @@ export default function AdminClientDetail() {
       .then(({ data }) => setClient(c => ({ ...c, status: data.status })))
       .catch(err => setError(err.response?.data?.error || 'שגיאה בעדכון'))
       .finally(() => setSaving(false));
+  };
+
+  const deleteTestData = () => {
+    if (!confirm('למחוק את כל הנתונים הפיננסיים של יוזר הטסטינג?')) return;
+    api.delete(`/admin/clients/${id}/financial-data`)
+      .then(() => setFinancial(null))
+      .catch(err => setError(err.response?.data?.error || 'שגיאה במחיקה'));
   };
 
   return (
@@ -87,7 +95,14 @@ export default function AdminClientDetail() {
 
       {client && (
         <div className="card" style={{ padding: '16px', marginTop: '12px' }}>
-          <h3 style={{ marginBottom: '10px' }}>נתונים פיננסיים שיובאו</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0 }}>נתונים פיננסיים שיובאו</h3>
+            {client.email === TEST_CLIENT_EMAIL && (financial?.pension_data || financial?.insurance_data || financial?.har_bituach_data) && (
+              <button onClick={deleteTestData} style={{ fontSize: '0.78rem', color: '#ef4444', background: 'none', border: '1px solid #ef4444', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer' }}>
+                מחק נתוני טסטינג
+              </button>
+            )}
+          </div>
           {!financial?.pension_data && !financial?.insurance_data && !financial?.har_bituach_data && (
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>עוד לא יובאו נתונים ללקוח הזה.</p>
           )}
