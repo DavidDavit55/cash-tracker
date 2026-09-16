@@ -60,11 +60,13 @@ export function parseHarBituach(arrayBuffer) {
   return policies;
 }
 
+// ponytail: "מנהלים"/"קצבה" נבדק ראשון בכוונה - ביטוח מנהלים הוא בפועל מוצר חיסכון (יש לו
+// צבירה אמיתית), לא הגנה טהורה, גם כשהשם שלו מכיל "לחיים" (למשל "מגדלור לחיים 2007").
 function guessType(text) {
   if (!text) return 'other';
+  if (text.includes('מנהלים') || text.includes('פנסי') || text.includes('קצבה')) return 'managers';
   if (text.includes('בריאות')) return 'health';
   if (text.includes('חיים')) return 'life';
-  if (text.includes('מנהלים') || text.includes('פנסי')) return 'managers';
   if (text.includes('תאונות')) return 'accident';
   if (text.includes('ריסק')) return 'life';
   return 'other';

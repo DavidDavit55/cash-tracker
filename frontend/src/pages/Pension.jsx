@@ -97,6 +97,9 @@ export default function Pension() {
   const pensionFunds = pensionOverride || mockPensionFunds;
   const total = pensionFunds.reduce((s, p) => s + p.balance, 0);
 
+  // ביטוח מנהלים הוא בפועל מוצר חיסכון (יש לו צבירה) - מוצג כאן, לא בהגנות.
+  const managersProducts = [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type === 'managers');
+
   const weightedFee = pensionFunds.reduce((s, p) => s + (p.feeFromAccumulation || 0) * p.balance, 0) / total;
   const weightedBestFee = pensionFunds.reduce((s, p) => {
     const deal = getBestDealForFund(p);
@@ -120,34 +123,50 @@ export default function Pension() {
         <div className="summary-label">סך הכל צבור</div>
       </div>
 
-      <div className="chart-card">
-        <h3>דמי ניהול</h3>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
-          <span>אתה משלם בממוצע</span>
-          <b style={{ color: feeDiff > 0 ? '#ef4444' : '#22c55e' }}>{weightedFee.toFixed(2)}%</b>
-        </div>
-        {feeDiff > 0 ? (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '10px', color: 'var(--text-muted)' }}>
-              <span>מה שאני יכול להשיג לך</span>
-              <span>{weightedBestFee.toFixed(2)}%</span>
-            </div>
-            <div style={{ background: '#fef2f2', color: '#b91c1c', borderRadius: '8px', padding: '8px 10px', fontSize: '0.8rem' }}>
-              אתה משלם {feeDiff.toFixed(2)}% יותר ממה שאני יכול להשיג לך — פוטנציאל חיסכון משמעותי לאורך שנים.
-            </div>
-          </>
-        ) : (
-          <div style={{ background: '#f0fdf4', color: '#15803d', borderRadius: '8px', padding: '8px 10px', fontSize: '0.8rem' }}>
-            דמי ניהול טובים — אין לנו כרגע הצעה שמשפרת את זה.
+      {feeDiff > 0 && (
+        <div className="chart-card">
+          <h3>דמי ניהול</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
+            <span>אתה משלם בממוצע</span>
+            <b style={{ color: '#ef4444' }}>{weightedFee.toFixed(2)}%</b>
           </div>
-        )}
-      </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '10px', color: 'var(--text-muted)' }}>
+            <span>מה שאני יכול להשיג לך</span>
+            <span>{weightedBestFee.toFixed(2)}%</span>
+          </div>
+          <div style={{ background: '#fef2f2', color: '#b91c1c', borderRadius: '8px', padding: '8px 10px', fontSize: '0.8rem' }}>
+            אתה משלם {feeDiff.toFixed(2)}% יותר ממה שאני יכול להשיג לך — פוטנציאל חיסכון משמעותי לאורך שנים.
+          </div>
+        </div>
+      )}
 
       <div className="chart-card" style={{ padding: '14px 0' }}>
         {pensionFunds.map((f, i) => (
           <PensionFundCard key={f.id} f={f} borderBottom={i < pensionFunds.length - 1} />
         ))}
       </div>
+
+      {managersProducts.length > 0 && (
+        <div className="chart-card" style={{ padding: '14px 0' }}>
+          <h3 style={{ padding: '0 16px 10px' }}>ביטוח מנהלים (מוצר חיסכון)</h3>
+          {managersProducts.map((p, i) => (
+            <ProductCard
+              key={p.id}
+              name={p.name}
+              subtitle={`${p.provider}${p.coverage ? ` • כיסוי ${fmt(p.coverage)}` : ''}`}
+              amount={p.monthlyPremium != null ? `${fmt(p.monthlyPremium)}/חודש` : 'לא ידוע'}
+              borderBottom={i < managersProducts.length - 1}
+              details={
+                <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingRight: '18px', margin: 0, lineHeight: 1.8 }}>
+                  {p.coverageItems.map((c, j) => <li key={j}>{c}</li>)}
+                </ul>
+              }
+              ctaLabel="השווה עבורי"
+              ctaHref={buildWhatsAppLink(p.name, p.provider)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

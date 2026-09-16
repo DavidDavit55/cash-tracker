@@ -15,8 +15,9 @@ export default function Protection() {
     return <PendingDataScreen />;
   }
 
+  // ביטוח מנהלים הוא בפועל מוצר חיסכון עם צבירה - מוצג בגמל ופנסיה, לא כאן.
   const insurancePolicies = (insuranceOverride || harBituachOverride)
-    ? [...(insuranceOverride || []), ...(harBituachOverride || [])]
+    ? [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type !== 'managers')
     : mockInsurancePolicies;
   const monthlyTotal = insurancePolicies.reduce((s, p) => s + (p.monthlyPremium || 0), 0);
   const hasHealthInsurance = insurancePolicies.some(p => p.type === 'health');
