@@ -115,7 +115,7 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
           )}
         </div>
       }
-      ctaLabel={CTA_LABEL}
+      ctaLabel={revealExtras ? CTA_LABEL : null}
       ctaHref={buildCalendlyLink(clientName, clientEmail)}
     />
   );
