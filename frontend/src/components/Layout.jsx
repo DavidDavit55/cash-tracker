@@ -3,11 +3,13 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Receipt, TrendingUp, Menu, X, Target, Tag, Upload, LogOut, Wallet, Shield, PiggyBank, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useMaslakaData } from '../hooks/useMaslakaData';
+import { useSandbox } from '../hooks/useSandboxData';
 import { computeNetWorth } from '../mockData';
 
-export default function Layout({ children, previewMode }) {
+export default function Layout({ children, previewMode, sandboxMode }) {
   const { user, logout } = useAuth();
   const { pensionOverride, insuranceOverride, harBituachOverride } = useMaslakaData() || {};
+  const sandbox = useSandbox();
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
   const showMockAmount = previewMode || import.meta.env.DEV || hasRealData;
   const managersProducts = [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type === 'managers');
@@ -16,7 +18,13 @@ export default function Layout({ children, previewMode }) {
     : Math.round(computeNetWorth().netWorth / 1000);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
-  const p = (path) => previewMode ? `/preview${path === '/' ? '' : path}` : path; // ponytail: temp mockup-only routing, remove with previewMode
+  // ponytail: temp mockup-only routing (previewMode) + סנדבוקס בדיקת פרסר (sandboxMode) - שני
+  // "מצבים" שמעבירים את הניווט התחתון לנתיב מקביל במקום המסכים האמיתיים.
+  const p = (path) => {
+    if (previewMode) return `/preview${path === '/' ? '' : path}`;
+    if (sandboxMode) return `/admin/parser-test${path === '/' ? '/networth' : path}`;
+    return path;
+  };
 
   const go = (path) => { setDrawerOpen(false); navigate(path); };
 
@@ -30,6 +38,17 @@ export default function Layout({ children, previewMode }) {
         <button className="icon-btn" onClick={() => setDrawerOpen(true)} title="תפריט"><Menu size={22}/></button>
       </header>
 
+      {sandboxMode && (
+        <div style={{ background: '#fef3c7', color: '#92400e', padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+          <span>🧪 סנדבוקס - {sandbox?.sandboxData?.clientInfo?.first} {sandbox?.sandboxData?.clientInfo?.last}</span>
+          <button
+            onClick={() => { sandbox?.clearSandbox(); navigate('/admin/parser-test'); }}
+            style={{ background: 'none', border: '1px solid #92400e', borderRadius: '6px', padding: '3px 10px', color: '#92400e', cursor: 'pointer', fontSize: '0.75rem' }}
+          >
+            לקוח חדש
+          </button>
+        </div>
+      )}
       <main className="app-main">{children}</main>
 
       <nav className="bottom-nav nav-circles">

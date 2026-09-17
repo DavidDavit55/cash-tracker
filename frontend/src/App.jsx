@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { MaslakaDataProvider } from './hooks/useMaslakaData';
+import { SandboxProvider } from './hooks/useSandboxData';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Expenses from './pages/Expenses';
@@ -21,12 +22,12 @@ import AdminClientDetail from './pages/AdminClientDetail';
 import ParserTest from './pages/ParserTest';
 import './index.css';
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, layoutProps }) {
   const { user, loading } = useAuth();
-  if (import.meta.env.DEV) return <Layout>{children}</Layout>; // ponytail: בלי login בפיתוח מקומי, לא רץ ב-build של production
+  if (import.meta.env.DEV) return <Layout {...layoutProps}>{children}</Layout>; // ponytail: בלי login בפיתוח מקומי, לא רץ ב-build של production
   if (loading) return <div className="loading full">טוען...</div>;
   if (!user) return <Navigate to="/login" replace />;
-  return <Layout>{children}</Layout>;
+  return <Layout {...layoutProps}>{children}</Layout>;
 }
 
 function PublicRoute({ children }) {
@@ -39,6 +40,7 @@ function PublicRoute({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+    <SandboxProvider>
     <MaslakaDataProvider>
       <BrowserRouter>
         <Routes>
@@ -58,6 +60,9 @@ export default function App() {
           <Route path="/admin/clients" element={<ProtectedRoute><AdminClients /></ProtectedRoute>} />
           <Route path="/admin/clients/:id" element={<ProtectedRoute><AdminClientDetail /></ProtectedRoute>} />
           <Route path="/admin/parser-test" element={<ProtectedRoute><ParserTest /></ProtectedRoute>} />
+          <Route path="/admin/parser-test/networth" element={<ProtectedRoute layoutProps={{ sandboxMode: true }}><NetWorth /></ProtectedRoute>} />
+          <Route path="/admin/parser-test/pension" element={<ProtectedRoute layoutProps={{ sandboxMode: true }}><Pension /></ProtectedRoute>} />
+          <Route path="/admin/parser-test/protection" element={<ProtectedRoute layoutProps={{ sandboxMode: true }}><Protection /></ProtectedRoute>} />
           <Route path="/preview" element={<Layout previewMode><NetWorth /></Layout>} />
           <Route path="/preview/assets" element={<Layout previewMode><Assets previewMode /></Layout>} />
           <Route path="/preview/pension" element={<Layout previewMode><Pension /></Layout>} />
@@ -67,6 +72,7 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </MaslakaDataProvider>
+    </SandboxProvider>
     </AuthProvider>
   );
 }

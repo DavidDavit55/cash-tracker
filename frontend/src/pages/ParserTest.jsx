@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { filesFromUploads, processMaslakaFiles, processHarBituachBuffer } from '../lib/maslakaCards';
+import { useSandbox } from '../hooks/useSandboxData';
 
 // כלי אבחון לבדיקת הפרסר על הרבה קבצים אמיתיים בבת אחת - הכל בדפדפן, בלי לשמור כלום
 // ל-DB ובלי לקשר לחשבון לקוח. ponytail: אין backend בכלל, אותה לוגיקת פרסור שכבר רצה ב-Import.jsx.
@@ -32,9 +33,22 @@ function ClassificationRow({ name, category, extra }) {
   );
 }
 
+function ViewAsClientButton({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ marginTop: '8px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '6px', padding: '5px 12px', fontSize: '0.78rem', cursor: 'pointer' }}
+    >
+      👁️ צפה כמו לקוח
+    </button>
+  );
+}
+
 // טבלת סיווג - תמיד גלויה, בשביל לעבור מהר על הרבה קבצים ולראות שהסיווג הגיוני,
 // בלי לפתוח JSON גולמי לכל קובץ בנפרד.
 function MaslakaClassification({ data }) {
+  const { setSandboxData } = useSandbox();
+  const nav = useNavigate();
   return (
     <div style={{ marginTop: '8px' }}>
       {data.pensionCards.map((c, i) => (
@@ -43,11 +57,17 @@ function MaslakaClassification({ data }) {
       {data.insuranceCards.map((c, i) => (
         <ClassificationRow key={`i${i}`} name={c.name} category={INSURANCE_TYPE_LABELS[c.type] || c.type} extra={c.groupClassification} />
       ))}
+      <ViewAsClientButton onClick={() => {
+        setSandboxData({ pensionOverride: data.pensionCards, insuranceOverride: data.insuranceCards, harBituachOverride: null, clientInfo: data.clientInfo });
+        nav('/admin/parser-test/pension');
+      }} />
     </div>
   );
 }
 
 function HarBituachClassification({ data }) {
+  const { setSandboxData } = useSandbox();
+  const nav = useNavigate();
   return (
     <div style={{ marginTop: '8px' }}>
       {Object.entries(data).map(([tz, cards]) => (
@@ -56,6 +76,10 @@ function HarBituachClassification({ data }) {
           {cards.map((c, i) => (
             <ClassificationRow key={i} name={c.name} category={INSURANCE_TYPE_LABELS[c.type] || c.type} extra={c.groupClassification} />
           ))}
+          <ViewAsClientButton onClick={() => {
+            setSandboxData({ pensionOverride: null, insuranceOverride: null, harBituachOverride: cards, clientInfo: { id: tz, first: 'ת.ז', last: tz } });
+            nav('/admin/parser-test/protection');
+          }} />
         </div>
       ))}
     </div>

@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from './useAuth';
+import { useSandbox } from './useSandboxData';
 
 // מצב נתוני מסלקה של הלקוח המחובר - נטען מה-DB (הוזן ע"י הסוכן בעמוד /import).
 const MaslakaDataContext = createContext(null);
@@ -34,4 +36,14 @@ export function MaslakaDataProvider({ children }) {
   );
 }
 
-export const useMaslakaData = () => useContext(MaslakaDataContext);
+// בתוך /admin/parser-test/* מציגים את נתוני הסנדבוקס (אם נטענו) במקום הנתונים האמיתיים של
+// המשתמש המחובר - מוגבל לנתיב הזה בלבד כדי שלא "יזלוג" לשאר האפליקציה.
+export function useMaslakaData() {
+  const sandbox = useSandbox();
+  const real = useContext(MaslakaDataContext);
+  const isSandboxRoute = useLocation().pathname.startsWith('/admin/parser-test');
+  if (isSandboxRoute && sandbox?.sandboxData) {
+    return { ...sandbox.sandboxData, loading: false };
+  }
+  return real;
+}
