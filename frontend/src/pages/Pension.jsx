@@ -14,6 +14,20 @@ import { dedupById } from '../lib/dedupById';
 
 const YOUNG_AGE_THRESHOLD = 50; // ponytail: כלל אצבע פשוט, לא נוסחה פיננסית מלאה
 
+// גיל אמיתי של הלקוח (מ-clientInfo.birth), לא userProfile.age שהוא מוקאפ קבוע - תפס אמיתי:
+// ההמלצה "בגיל 32..." הוצגה ללקוח בן 41 כי userProfile.age לא היה קשור אליו בכלל.
+function ageFromBirth(birthDateStr) {
+  const m = (birthDateStr || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const [, day, month, year] = m;
+  const birth = new Date(Number(year), Number(month) - 1, Number(day));
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const hadBirthdayThisYear = now.getMonth() > birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
+  if (!hadBirthdayThisYear) age--;
+  return age;
+}
+
 // ponytail: "חיסכון לכל ילד" הוא חשבון ממשלתי אחיד - אין עליו הסכם סוכנות ואין מה להשוות מולו.
 const NO_DEAL_PRODUCT_TYPES = new Set(['חיסכון לכל ילד']);
 
@@ -24,7 +38,7 @@ function getBestDealForFund(f) {
     : getAgencyGemelFee(f.provider, f.balance, f.type === 'gemel');
 }
 
-function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
+function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth }) {
   const [real, setReal] = useState(null);
   const [realStatus, setRealStatus] = useState('loading'); // loading | ok | none
   const [categoryAvg, setCategoryAvg] = useState(null);
@@ -56,7 +70,8 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
   }
 
   const stockExposure = real?.stockExposurePercent ?? f.stockExposure;
-  const showTrackAdvisory = f.isDefaultTrack && userProfile.age < YOUNG_AGE_THRESHOLD;
+  const age = ageFromBirth(clientBirth) ?? userProfile.age;
+  const showTrackAdvisory = f.isDefaultTrack && age < YOUNG_AGE_THRESHOLD;
 
   const agencyDeal = getBestDealForFund(f);
   const currentFee = f.feeFromAccumulation ?? Infinity;
@@ -103,7 +118,7 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
           )}
           {showTrackAdvisory && revealExtras && (
             <div style={{ background: '#fffbeb', color: '#92400e', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
-              בגיל {userProfile.age} אתה במסלול ברירת מחדל תלוי-גיל עם {stockExposure}% חשיפה למניות — בגילך אפשר לרוב להעז יותר. כדאי לבדוק מסלול עם חשיפה גבוהה יותר.
+              בגיל {age} אתה במסלול ברירת מחדל תלוי-גיל עם {stockExposure}% חשיפה למניות — בגילך אפשר לרוב להעז יותר. כדאי לבדוק מסלול עם חשיפה גבוהה יותר.
             </div>
           )}
           {showAgencyDeal && revealExtras && (
@@ -217,7 +232,7 @@ export default function Pension() {
         <div className="chart-card" style={{ padding: '14px 0' }} key={label}>
           <h3 style={{ padding: '0 16px 10px' }}>{label}</h3>
           {items.map((f, i) => (
-            <PensionFundCard key={f.id} f={f} borderBottom={i < items.length - 1} clientName={clientName} clientEmail={clientEmail} />
+            <PensionFundCard key={f.id} f={f} borderBottom={i < items.length - 1} clientName={clientName} clientEmail={clientEmail} clientBirth={clientInfo?.birth} />
           ))}
         </div>
       ))}
