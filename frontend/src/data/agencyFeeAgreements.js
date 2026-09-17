@@ -101,6 +101,7 @@ export function getAgencyGemelFee(providerName, balance, isInvestmentGemel = fal
   if (!key) return null;
   const company = agencyFeeAgreements[key];
   const table = (isInvestmentGemel && company.gemelLehaskaa) || company.gemelHishtalmut;
+  if (!table) return null; // לחברה יש הסכם פנסיה בלבד (למשל הפניקס) - אין מה להציע לגמל/השתלמות
   const tier = bestTierBelowOrEqual(table, 'balanceThreshold', balance);
   return tier ? { ...tier, company: key, source: company.source } : null;
 }
