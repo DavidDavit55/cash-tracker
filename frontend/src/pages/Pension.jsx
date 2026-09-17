@@ -146,7 +146,7 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
           {showAgencyDeal && revealExtras && (
             <div style={{ background: '#eef2ff', color: '#3730a3', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px', lineHeight: 1.8 }}>
               {feeSavings != null && feeSavings > 0 ? (
-                <div>💰 יש לי הסכם מול {agencyDeal.company} — בהפחתת דמי הניהול בלבד, עד גיל הפרישה אפשר לצבור בערך <b>{fmt(feeSavings)}</b> יותר.</div>
+                <div>💰 דמי הניהול שאתה משלם היום גבוהים ביחס להפקדה ולצבירה שלך, עד הפרישה אפשר לחסוך לפחות <b>{fmt(feeSavings)}</b> יותר.</div>
               ) : (
                 <div>💰 יש לי הסכם מול {agencyDeal.company} שיכול להוזיל לך את דמי הניהול.</div>
               )}
@@ -154,7 +154,7 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
           )}
         </div>
       }
-      ctaLabel={revealExtras ? CTA_LABEL : null}
+      ctaLabel={revealExtras ? (feeSavings != null && feeSavings > 0 ? `רוצה לשמוע עוד הצעות? ${CTA_LABEL}` : CTA_LABEL) : null}
       ctaHref={buildCalendlyLink(clientName, clientEmail)}
     />
   );
