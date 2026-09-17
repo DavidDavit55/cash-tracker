@@ -1,4 +1,4 @@
-import { insurancePolicies as mockInsurancePolicies, buildWhatsAppLink } from '../mockData';
+import { insurancePolicies as mockInsurancePolicies, buildCalendlyLink, CTA_LABEL } from '../mockData';
 import { useMaslakaData } from '../hooks/useMaslakaData';
 import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
 import PendingDataScreen from '../components/PendingDataScreen';
@@ -19,7 +19,8 @@ const CATEGORY_LABELS = [
 ];
 
 export default function Protection() {
-  const { pensionOverride, insuranceOverride, harBituachOverride, loading: maslakaLoading } = useMaslakaData() || {};
+  const { pensionOverride, insuranceOverride, harBituachOverride, clientInfo, loading: maslakaLoading } = useMaslakaData() || {};
+  const clientName = clientInfo ? `${clientInfo.first || ''} ${clientInfo.last || ''}`.trim() : undefined;
   const isPreview = useIsPreviewRoute();
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
 
@@ -84,8 +85,8 @@ export default function Protection() {
                       {p.coverageItems.map((c, j) => <li key={j}>{c}</li>)}
                     </ul>
                   }
-                  ctaLabel="השווה עבורי"
-                  ctaHref={buildWhatsAppLink(p.name, p.provider)}
+                  ctaLabel={CTA_LABEL}
+                  ctaHref={buildCalendlyLink(clientName)}
                 />
               ))}
             </div>
@@ -105,8 +106,8 @@ export default function Protection() {
                   {p.coverageItems.map((c, j) => <li key={j}>{c}</li>)}
                 </ul>
               }
-              ctaLabel="השווה עבורי"
-              ctaHref={buildWhatsAppLink(p.name, p.provider)}
+              ctaLabel={CTA_LABEL}
+              ctaHref={buildCalendlyLink()}
             />
           ))}
         </div>

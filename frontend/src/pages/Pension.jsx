@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { pensionFunds as mockPensionFunds, buildWhatsAppLink, userProfile } from '../mockData';
+import { pensionFunds as mockPensionFunds, buildCalendlyLink, CTA_LABEL, userProfile } from '../mockData';
 import { fetchRealFundData } from '../lib/pensionNetApi';
 import { fetchCategoryAverage, fetchOwnLTM } from '../lib/categoryAverage';
 import { useMaslakaData } from '../hooks/useMaslakaData';
@@ -22,7 +22,7 @@ function getBestDealForFund(f) {
     : getAgencyGemelFee(f.provider, f.balance, f.type === 'gemel');
 }
 
-function PensionFundCard({ f, borderBottom }) {
+function PensionFundCard({ f, borderBottom, clientName }) {
   const [real, setReal] = useState(null);
   const [realStatus, setRealStatus] = useState('loading'); // loading | ok | none
   const [categoryAvg, setCategoryAvg] = useState(null);
@@ -98,13 +98,13 @@ function PensionFundCard({ f, borderBottom }) {
           )}
         </div>
       }
-      ctaLabel="השווה עבורי"
-      ctaHref={buildWhatsAppLink(f.name, `${f.provider}, ${fmt(f.balance)}`)}
+      ctaLabel={CTA_LABEL}
+      ctaHref={buildCalendlyLink(clientName)}
     />
   );
 }
 
-function ManagersFundCard({ p, borderBottom }) {
+function ManagersFundCard({ p, borderBottom, clientName }) {
   const [real, setReal] = useState(null);
 
   useEffect(() => {
@@ -145,8 +145,8 @@ function ManagersFundCard({ p, borderBottom }) {
           </div>
         </div>
       }
-      ctaLabel="השווה עבורי"
-      ctaHref={buildWhatsAppLink(p.name, p.provider)}
+      ctaLabel={CTA_LABEL}
+      ctaHref={buildCalendlyLink(clientName)}
     />
   );
 }
@@ -162,6 +162,7 @@ export default function Pension() {
   }
 
   const pensionFunds = pensionOverride || mockPensionFunds;
+  const clientName = clientInfo ? `${clientInfo.first || ''} ${clientInfo.last || ''}`.trim() : undefined;
 
   // 4 קטגוריות נפרדות במקום רשימה שטוחה אחת: פנסיה, קרנות השתלמות, גמל (כל השאר מ-type='gemel'),
   // וביטוח מנהלים (כבר קיים כקבוצה נפרדת למטה).
@@ -200,7 +201,7 @@ export default function Pension() {
         <div className="chart-card" style={{ padding: '14px 0' }} key={label}>
           <h3 style={{ padding: '0 16px 10px' }}>{label}</h3>
           {items.map((f, i) => (
-            <PensionFundCard key={f.id} f={f} borderBottom={i < items.length - 1} />
+            <PensionFundCard key={f.id} f={f} borderBottom={i < items.length - 1} clientName={clientName} />
           ))}
         </div>
       ))}
@@ -209,7 +210,7 @@ export default function Pension() {
         <div className="chart-card" style={{ padding: '14px 0' }}>
           <h3 style={{ padding: '0 16px 10px' }}>ביטוח מנהלים (מוצר חיסכון)</h3>
           {managersProducts.map((p, i) => (
-            <ManagersFundCard key={p.id} p={p} borderBottom={i < managersProducts.length - 1} />
+            <ManagersFundCard key={p.id} p={p} borderBottom={i < managersProducts.length - 1} clientName={clientName} />
           ))}
         </div>
       )}

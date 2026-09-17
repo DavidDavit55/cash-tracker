@@ -1,10 +1,14 @@
 // נתוני דמו זמניים ל-NETWORTH — יוחלפו בחיבור אמיתי (Open Finance / מסלקת הר ביטוח)
 
-export const AGENT_WHATSAPP = '972500000000'; // TODO: להחליף במספר האמיתי של הסוכן
+export const AGENT_WHATSAPP = '972500000000'; // TODO: להחליף במספר האמיתי של הסוכן - עדיין בשימוש ב-CoverageGapWidget
 
-export function buildWhatsAppLink(productName, extra = '') {
-  const text = `היי, ראיתי באפליקציה את "${productName}"${extra ? ` (${extra})` : ''} ואשמח לבדיקה אם יש אפשרות טובה יותר.`;
-  return `https://wa.me/${AGENT_WHATSAPP}?text=${encodeURIComponent(text)}`;
+export const CALENDLY_URL = 'https://calendly.com/david-davit-fin/30min';
+export const CTA_LABEL = 'קבע פגישה עם מתכנן פנסיוני';
+
+// שם הלקוח מוזרם לקישור (?name=) כדי שיופיע בדף התיאום וביומן של דוד אחרי הקביעה -
+// שם האירוע עצמו ("בדיקת תיק"/"תכנון פנסיוני") נקבע פעם אחת בהגדרות Calendly עצמו, לא כאן.
+export function buildCalendlyLink(clientName) {
+  return clientName ? `${CALENDLY_URL}?name=${encodeURIComponent(clientName)}` : CALENDLY_URL;
 }
 
 export const netWorthHistory = [
