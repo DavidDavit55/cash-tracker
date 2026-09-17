@@ -29,13 +29,19 @@ export async function filesFromUploads(fileList) {
   return out;
 }
 
+// ponytail: תיקון תצוגה זמני בלבד - בקבצים אמיתיים שדה שם התוכנית (SHEM-TOCHNIT) לפעמים
+// מכיל טקסט של מסלול ביטוחי צמוד (נכות/שאירים) במקום שם מוצר. עד שנטפל בזה כמו שצריך
+// (task_64850134 - לפרסר את הכיסוי הביטוחי בנפרד) פשוט לא מציגים את הטקסט הזה כשם הקרן.
+const INSURANCE_RIDER_TEXT = /לנכות|לשארים|לשאירים/;
+
 function mapPensionItemToCard(item, kind) {
   const tracks = item.tracks || [];
   const mainTrack = tracks.length ? tracks.reduce((a, b) => (b.pct || 0) > (a.pct || 0) ? b : a) : null;
   const balance = parseFloat(kind === 'pension' ? item.savings : item.tzvira);
+  const planName = item.plan && !INSURANCE_RIDER_TEXT.test(item.plan) ? item.plan : null;
   return {
     id: item.policyNum || `${kind}-${item.plan}-${item.company}`,
-    name: item.plan || item.company,
+    name: planName || item.company,
     provider: item.company,
     type: kind === 'pension' ? 'pension' : 'gemel',
     productType: item.productType || null,

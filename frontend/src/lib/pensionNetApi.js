@@ -94,6 +94,7 @@ export async function fetchRealFundData(providerName, fundType, trackName, planN
 
 function toFundData(record, exactMatch = false) {
   return {
+    fundId: record.FUND_ID,
     fundName: record.FUND_NAME,
     stockExposurePercent: record.TOTAL_ASSETS ? Math.round((record.STOCK_MARKET_EXPOSURE / record.TOTAL_ASSETS) * 100) : null,
     yieldTrailing3Yrs: record.YIELD_TRAILING_3_YRS,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { pensionFunds as mockPensionFunds, buildWhatsAppLink, userProfile } from '../mockData';
 import { fetchRealFundData } from '../lib/pensionNetApi';
+import { fetchCategoryAverage, fetchOwnLTM } from '../lib/categoryAverage';
 import { useMaslakaData } from '../hooks/useMaslakaData';
 import { getAgencyPensionFee, getAgencyGemelFee } from '../data/agencyFeeAgreements';
 import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
@@ -24,6 +25,8 @@ function getBestDealForFund(f) {
 function PensionFundCard({ f, borderBottom }) {
   const [real, setReal] = useState(null);
   const [realStatus, setRealStatus] = useState('loading'); // loading | ok | none
+  const [categoryAvg, setCategoryAvg] = useState(null);
+  const [ownLtm, setOwnLtm] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,6 +35,16 @@ function PensionFundCard({ f, borderBottom }) {
       .catch(() => { if (!cancelled) setRealStatus('none'); });
     return () => { cancelled = true; };
   }, [f.provider, f.type, f.investmentTrack, f.name, f.investmentTrackCode]);
+
+  // השוואה מול השוק (12 חודשים) - רק לפנסיה עם התאמה מדויקת, כדי לא להשוות מסלול שגוי בטעות.
+  useEffect(() => {
+    if (!real?.exactMatch || f.type !== 'pension') return;
+    let cancelled = false;
+    Promise.all([fetchCategoryAverage(real.fundName), fetchOwnLTM(real.fundId)])
+      .then(([avg, own]) => { if (!cancelled) { setCategoryAvg(avg); setOwnLtm(own); } })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [real?.exactMatch, real?.fundName, real?.fundId, f.type]);
 
   const stockExposure = real?.stockExposurePercent ?? f.stockExposure;
   const showTrackAdvisory = f.isDefaultTrack && userProfile.age < YOUNG_AGE_THRESHOLD;
@@ -71,6 +84,12 @@ function PensionFundCard({ f, borderBottom }) {
             )}
             {!real && <div>תשואה 12 חודשים: <b style={{ color: 'var(--text)' }}>{f.return12m}%</b></div>}
           </div>
+          {categoryAvg && ownLtm != null && (
+            <div style={{ background: ownLtm >= categoryAvg.average ? '#ecfdf5' : '#fef2f2', color: ownLtm >= categoryAvg.average ? '#065f46' : '#991b1b', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
+              📊 תשואת המסלול שלך ב-12 החודשים האחרונים: <b>{ownLtm.toFixed(2)}%</b>, לעומת ממוצע השוק באותו סוג מסלול ({categoryAvg.byCompany.length} חברות): <b>{categoryAvg.average.toFixed(2)}%</b>
+              {ownLtm >= categoryAvg.average ? ' — מעל הממוצע 🎉' : ' — מתחת לממוצע'}
+            </div>
+          )}
           {showTrackAdvisory && (
             <div style={{ background: '#fffbeb', color: '#92400e', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
               בגיל {userProfile.age} אתה במסלול ברירת מחדל תלוי-גיל עם {stockExposure}% חשיפה למניות — בגילך אפשר לרוב להעז יותר. כדאי לבדוק מסלול עם חשיפה גבוהה יותר.
