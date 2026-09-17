@@ -145,15 +145,10 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
           )}
           {showAgencyDeal && revealExtras && (
             <div style={{ background: '#eef2ff', color: '#3730a3', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px', lineHeight: 1.8 }}>
-              <div>
-                יש לי הסכם מול {agencyDeal.company}! דמי הניהול שאני יכול להשיג לך: <b>{agencyDeal.feeFromAccumulation}% מצבירה</b>
-                {agencyDeal.feeFromDeposit != null && <> / <b>{agencyDeal.feeFromDeposit}% מהפקדה</b></>}
-                {' '}(אתה משלם היום {currentFee}%{f.feeFromDeposit != null ? ` / ${f.feeFromDeposit}% מהפקדה` : ''}).
-              </div>
-              {feeSavings != null && feeSavings > 0 && (
-                <div style={{ marginTop: '6px' }}>
-                  💰 המשמעות: בהפחתת דמי הניהול בלבד, עד גיל הפרישה אפשר לצבור בערך <b>{fmt(feeSavings)}</b> יותר.
-                </div>
+              {feeSavings != null && feeSavings > 0 ? (
+                <div>💰 יש לי הסכם מול {agencyDeal.company} — בהפחתת דמי הניהול בלבד, עד גיל הפרישה אפשר לצבור בערך <b>{fmt(feeSavings)}</b> יותר.</div>
+              ) : (
+                <div>💰 יש לי הסכם מול {agencyDeal.company} שיכול להוזיל לך את דמי הניהול.</div>
               )}
             </div>
           )}
