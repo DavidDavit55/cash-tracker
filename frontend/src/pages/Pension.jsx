@@ -61,6 +61,9 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
   const agencyDeal = getBestDealForFund(f);
   const currentFee = f.feeFromAccumulation ?? Infinity;
   const showAgencyDeal = agencyDeal && agencyDeal.feeFromAccumulation < currentFee;
+  // אם אפשר להשוות מול השוק - קודם ההשוואה, אחר כך ההמלצות (המלצה בלי הקשר "איפה אתה עומד"
+  // קודם פחות משכנעת). אם אי אפשר להשוות (אין התאמה מדויקת), אין למה לחכות - מציגים ישר.
+  const revealExtras = !canCompare || compareOpen;
 
   const { warning, warningText } = statusWarning(f);
 
@@ -98,12 +101,12 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
               {ownLtm >= categoryAvg.average ? ' — מעל הממוצע 🎉' : ' — מתחת לממוצע'}
             </div>
           )}
-          {showTrackAdvisory && (
+          {showTrackAdvisory && revealExtras && (
             <div style={{ background: '#fffbeb', color: '#92400e', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
               בגיל {userProfile.age} אתה במסלול ברירת מחדל תלוי-גיל עם {stockExposure}% חשיפה למניות — בגילך אפשר לרוב להעז יותר. כדאי לבדוק מסלול עם חשיפה גבוהה יותר.
             </div>
           )}
-          {showAgencyDeal && (
+          {showAgencyDeal && revealExtras && (
             <div style={{ background: '#ecfdf5', color: '#065f46', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
               💰 יש לי הסכם מול {agencyDeal.company}! דמי הניהול שאני יכול להשיג לך: <b>{agencyDeal.feeFromAccumulation}% מצבירה</b>
               {agencyDeal.feeFromDeposit != null && <> / <b>{agencyDeal.feeFromDeposit}% מהפקדה</b></>}
