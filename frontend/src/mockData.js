@@ -9,10 +9,10 @@ export const CTA_LABEL = 'קבע פגישה עם מתכנן פנסיוני';
 // שם האירוע עצמו ("בדיקת תיק"/"תכנון פנסיוני") נקבע פעם אחת בהגדרות Calendly עצמו, לא כאן.
 export function buildCalendlyLink(clientName, clientEmail) {
   const params = new URLSearchParams();
+  params.set('timezone', 'Asia/Jerusalem'); // כופה שעון ישראל, לא תלוי בזיהוי דפדפן של הלקוח
   if (clientName) params.set('name', clientName);
   if (clientEmail) params.set('email', clientEmail);
-  const qs = params.toString();
-  return qs ? `${CALENDLY_URL}?${qs}` : CALENDLY_URL;
+  return `${CALENDLY_URL}?${params.toString()}`;
 }
 
 export const netWorthHistory = [
