@@ -29,6 +29,8 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
   const [realStatus, setRealStatus] = useState('loading'); // loading | ok | none
   const [categoryAvg, setCategoryAvg] = useState(null);
   const [ownLtm, setOwnLtm] = useState(null);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareLoading, setCompareLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,15 +40,20 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
     return () => { cancelled = true; };
   }, [f.provider, f.type, f.investmentTrack, f.name, f.investmentTrackCode]);
 
-  // השוואה מול השוק (12 חודשים) - רק לפנסיה עם התאמה מדויקת, כדי לא להשוות מסלול שגוי בטעות.
-  useEffect(() => {
-    if (!real?.exactMatch || f.type !== 'pension') return;
-    let cancelled = false;
-    Promise.all([fetchCategoryAverage(real.fundName), fetchOwnLTM(real.fundId)])
-      .then(([avg, own]) => { if (!cancelled) { setCategoryAvg(avg); setOwnLtm(own); } })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [real?.exactMatch, real?.fundName, real?.fundId, f.type]);
+  const canCompare = Boolean(real?.exactMatch) && f.type === 'pension';
+
+  // בלחיצה בלבד, לא אוטומטי - כדי שהלקוח לא יחכה לטעינה של דבר שלא ביקש לראות.
+  function handleToggleCompare() {
+    const next = !compareOpen;
+    setCompareOpen(next);
+    if (next && !categoryAvg && !compareLoading) {
+      setCompareLoading(true);
+      Promise.all([fetchCategoryAverage(real.fundName), fetchOwnLTM(real.fundId)])
+        .then(([avg, own]) => { setCategoryAvg(avg); setOwnLtm(own); })
+        .catch(() => {})
+        .finally(() => setCompareLoading(false));
+    }
+  }
 
   const stockExposure = real?.stockExposurePercent ?? f.stockExposure;
   const showTrackAdvisory = f.isDefaultTrack && userProfile.age < YOUNG_AGE_THRESHOLD;
@@ -72,15 +79,20 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
             {f.feeFromAccumulation != null && <div>דמי ניהול מצבירה: <b style={{ color: 'var(--text)' }}>{f.feeFromAccumulation}%</b></div>}
             <div>מסלול השקעה: <b style={{ color: 'var(--text)' }}>{f.investmentTrack}</b></div>
             {stockExposure != null && <div>חשיפה למניות: <b style={{ color: 'var(--text)' }}>{stockExposure}%</b></div>}
-            {real && (
-              <>
-                <div>תשואה 3 שנים (שוק): <b style={{ color: 'var(--text)' }}>{real.yieldTrailing3Yrs}%</b></div>
-                <div>תשואה 5 שנים (שוק): <b style={{ color: 'var(--text)' }}>{real.yieldTrailing5Yrs}%</b></div>
-              </>
-            )}
             {!real && <div>תשואה 12 חודשים: <b style={{ color: 'var(--text)' }}>{f.return12m}%</b></div>}
           </div>
-          {categoryAvg && ownLtm != null && (
+          {canCompare && !compareOpen && (
+            <button
+              onClick={handleToggleCompare}
+              style={{ background: '#f5f3ff', color: '#5b21b6', border: 'none', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px', width: '100%', textAlign: 'right', cursor: 'pointer', fontWeight: 600 }}
+            >
+              🔍 רוצה להבין איפה אתה ביחס לאחרים?
+            </button>
+          )}
+          {canCompare && compareOpen && compareLoading && (
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>טוען השוואה...</div>
+          )}
+          {canCompare && compareOpen && categoryAvg && ownLtm != null && (
             <div style={{ background: ownLtm >= categoryAvg.average ? '#ecfdf5' : '#fef2f2', color: ownLtm >= categoryAvg.average ? '#065f46' : '#991b1b', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
               📊 תשואת המסלול שלך ב-12 החודשים האחרונים: <b>{ownLtm.toFixed(2)}%</b>, לעומת ממוצע השוק באותו סוג מסלול ({categoryAvg.byCompany.length} חברות): <b>{categoryAvg.average.toFixed(2)}%</b>
               {ownLtm >= categoryAvg.average ? ' — מעל הממוצע 🎉' : ' — מתחת לממוצע'}
@@ -137,12 +149,6 @@ function ManagersFundCard({ p, borderBottom, clientName, clientEmail }) {
             {p.feeFromDeposit != null && <div>דמי ניהול מהפקדה: <b style={{ color: 'var(--text)' }}>{p.feeFromDeposit}%</b></div>}
             {p.feeFromAccumulation != null && <div>דמי ניהול מצבירה: <b style={{ color: 'var(--text)' }}>{p.feeFromAccumulation}%</b></div>}
             {stockExposure != null && <div>חשיפה למניות: <b style={{ color: 'var(--text)' }}>{stockExposure}%</b></div>}
-            {real && (
-              <>
-                <div>תשואה 3 שנים (שוק): <b style={{ color: 'var(--text)' }}>{real.yieldTrailing3Yrs}%</b></div>
-                <div>תשואה 5 שנים (שוק): <b style={{ color: 'var(--text)' }}>{real.yieldTrailing5Yrs}%</b></div>
-              </>
-            )}
             {!real && p.return12m != null && <div>תשואה 12 חודשים: <b style={{ color: 'var(--text)' }}>{p.return12m}%</b></div>}
           </div>
         </div>
