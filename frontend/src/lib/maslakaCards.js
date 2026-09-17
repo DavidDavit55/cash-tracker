@@ -48,6 +48,7 @@ function mapPensionItemToCard(item, kind) {
     balance: isNaN(balance) ? 0 : balance,
     feeFromDeposit: item.dmeiNihulHafkada ? parseFloat(item.dmeiNihulHafkada) : null,
     feeFromAccumulation: item.dmeiNihulTzvira ? parseFloat(item.dmeiNihulTzvira) : null,
+    monthlyDeposit: item.monthlyDeposit ? parseFloat(item.monthlyDeposit) : null,
     investmentTrack: mainTrack?.name || '',
     investmentTrackCode: mainTrack?.kod || '',
     stockExposure: null,

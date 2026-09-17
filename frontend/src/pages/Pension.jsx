@@ -6,6 +6,7 @@ import { fetchCategoryAverage, fetchOwnLTM } from '../lib/categoryAverage';
 import { useAuth } from '../hooks/useAuth';
 import { useMaslakaData } from '../hooks/useMaslakaData';
 import { getAgencyPensionFee, getAgencyGemelFee } from '../data/agencyFeeAgreements';
+import { monthsToRetirement, projectRetirement } from '../lib/pensionProjection';
 import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
 import PendingDataScreen from '../components/PendingDataScreen';
 import ProductCard, { fmt } from '../components/ProductCard';
@@ -26,6 +27,17 @@ function ageFromBirth(birthDateStr) {
   const hadBirthdayThisYear = now.getMonth() > birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
   if (!hadBirthdayThisYear) age--;
   return age;
+}
+
+// שם קריא לקטגוריה שמחזיר classifyTrack (categoryAverage.js) - כדי להציג "במסלול X" במקום
+// "באותו סוג מסלול" הגנרי.
+function categoryLabel(category) {
+  const ageMatch = (category || '').match(/^age_(\d+)_under$/);
+  if (ageMatch) return `מסלול לבני ${ageMatch[1]} ומטה`;
+  if (category === 'equity') return 'מסלול מניות';
+  if (category === 'sp500') return 'מסלול עוקב S&P 500';
+  if (category === 'halachic') return 'מסלול הלכתי';
+  return 'אותו סוג מסלול';
 }
 
 // ponytail: "חיסכון לכל ילד" הוא חשבון ממשלתי אחיד - אין עליו הסכם סוכנות ואין מה להשוות מולו.
@@ -54,7 +66,7 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
     return () => { cancelled = true; };
   }, [f.provider, f.type, f.investmentTrack, f.name, f.investmentTrackCode]);
 
-  const canCompare = Boolean(real?.exactMatch) && f.type === 'pension';
+  const canCompare = Boolean(real?.exactMatch) && (f.type === 'pension' || f.type === 'gemel');
 
   // בלחיצה בלבד, לא אוטומטי - כדי שהלקוח לא יחכה לטעינה של דבר שלא ביקש לראות.
   function handleToggleCompare() {
@@ -62,7 +74,7 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
     setCompareOpen(next);
     if (next && !categoryAvg && !compareLoading) {
       setCompareLoading(true);
-      Promise.all([fetchCategoryAverage(real.fundName), fetchOwnLTM(real.fundId)])
+      Promise.all([fetchCategoryAverage(real.fundName, f.type, f.productType), fetchOwnLTM(real.fundId, f.type)])
         .then(([avg, own]) => { setCategoryAvg(avg); setOwnLtm(own); })
         .catch(() => {})
         .finally(() => setCompareLoading(false));
@@ -79,6 +91,16 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
   // אם אפשר להשוות מול השוק - קודם ההשוואה, אחר כך ההמלצות (המלצה בלי הקשר "איפה אתה עומד"
   // קודם פחות משכנעת). אם אי אפשר להשוות (אין התאמה מדויקת), אין למה לחכות - מציגים ישר.
   const revealExtras = !canCompare || compareOpen;
+
+  const months = f.type === 'pension' ? monthsToRetirement(clientBirth) : null;
+  const canProjectFeeSavings = showAgencyDeal && f.type === 'pension' && months != null && f.monthlyDeposit != null;
+  let feeSavings = null;
+  if (canProjectFeeSavings) {
+    const base = { balance: f.balance, monthlyDeposit: f.monthlyDeposit, months };
+    const withCurrentFees = projectRetirement({ ...base, feeFromDepositPct: f.feeFromDeposit, feeFromAccumulationPct: f.feeFromAccumulation });
+    const withAgencyFees = projectRetirement({ ...base, feeFromDepositPct: agencyDeal.feeFromDeposit, feeFromAccumulationPct: agencyDeal.feeFromAccumulation });
+    feeSavings = Math.round(withAgencyFees - withCurrentFees);
+  }
 
   const { warning, warningText } = statusWarning(f);
 
@@ -112,7 +134,7 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
           )}
           {canCompare && compareOpen && categoryAvg && ownLtm != null && (
             <div style={{ background: ownLtm >= categoryAvg.average ? '#ecfdf5' : '#fef2f2', color: ownLtm >= categoryAvg.average ? '#065f46' : '#991b1b', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
-              📊 תשואת המסלול שלך ב-12 החודשים האחרונים: <b>{ownLtm.toFixed(2)}%</b>, לעומת ממוצע השוק באותו סוג מסלול ({categoryAvg.byCompany.length} חברות): <b>{categoryAvg.average.toFixed(2)}%</b>
+              📊 תשואת המסלול שלך ב-12 החודשים האחרונים: <b>{ownLtm.toFixed(2)}%</b>, לעומת ממוצע השוק ב{categoryLabel(categoryAvg.category)} ({categoryAvg.byCompany.length} חברות): <b>{categoryAvg.average.toFixed(2)}%</b>
               {ownLtm >= categoryAvg.average ? ' — מעל הממוצע 🎉' : ' — מתחת לממוצע'}
             </div>
           )}
@@ -122,10 +144,17 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
             </div>
           )}
           {showAgencyDeal && revealExtras && (
-            <div style={{ background: '#ecfdf5', color: '#065f46', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
-              💰 יש לי הסכם מול {agencyDeal.company}! דמי הניהול שאני יכול להשיג לך: <b>{agencyDeal.feeFromAccumulation}% מצבירה</b>
-              {agencyDeal.feeFromDeposit != null && <> / <b>{agencyDeal.feeFromDeposit}% מהפקדה</b></>}
-              {' '}(אתה משלם היום {currentFee}%).
+            <div style={{ background: '#eef2ff', color: '#3730a3', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px', lineHeight: 1.8 }}>
+              <div>
+                יש לי הסכם מול {agencyDeal.company}! דמי הניהול שאני יכול להשיג לך: <b>{agencyDeal.feeFromAccumulation}% מצבירה</b>
+                {agencyDeal.feeFromDeposit != null && <> / <b>{agencyDeal.feeFromDeposit}% מהפקדה</b></>}
+                {' '}(אתה משלם היום {currentFee}%{f.feeFromDeposit != null ? ` / ${f.feeFromDeposit}% מהפקדה` : ''}).
+              </div>
+              {feeSavings != null && feeSavings > 0 && (
+                <div style={{ marginTop: '6px' }}>
+                  💰 המשמעות: בהפחתת דמי הניהול בלבד, עד גיל הפרישה אפשר לצבור בערך <b>{fmt(feeSavings)}</b> יותר.
+                </div>
+              )}
             </div>
           )}
         </div>

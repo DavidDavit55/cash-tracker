@@ -42,6 +42,20 @@ function getVal(root, tag) {
   return '';
 }
 
+// כמו getVal אבל מהסוף - שדות שחוזרים כמה פעמים לפי תקופת דיווח (כמו TOTAL-HAFKADA) התקופה
+// האחרונה (הכי עדכנית) מופיעה אחרונה במסמך, לא ראשונה.
+function getLastVal(root, tag) {
+  const matches = allDescendants(root, tag);
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const t = (matches[i].textContent || '').trim();
+    if (!t || t === 'NULL') continue;
+    const f = parseFloat(t);
+    if (!isNaN(f) && f === 0) continue;
+    return t;
+  }
+  return '';
+}
+
 function fmtDate(d) {
   if (!d || d.length < 8) return d || '';
   return `${d.slice(6, 8)}/${d.slice(4, 6)}/${d.slice(0, 4)}`;
@@ -166,6 +180,9 @@ function extractPension(root, result) {
       if (!isNaN(v)) dmtAnnual = v >= 0.5 ? v.toFixed(2) : (v * 12).toFixed(2);
     }
 
+    // ההפקדה החודשית האחרונה (לא הראשונה - TOTAL-HAFKADA חוזר לפי תקופת דיווח, האחרונה היא העדכנית)
+    const monthlyDeposit = getLastVal(heshbon, 'TOTAL-HAFKADA');
+
     if (policyNum) {
       result.pension.push({
         policyNum, company, pensionType, plan,
@@ -173,7 +190,7 @@ function extractPension(root, result) {
         savings: savingsVal > 0 ? savingsVal.toFixed(2) : '',
         tagmulim: tagmulim ? String(Math.round(tagmulim)) : '',
         pitzuim: pitzuim ? String(Math.round(pitzuim)) : '',
-        monthlyPension, netReturn, returnYear,
+        monthlyPension, netReturn, returnYear, monthlyDeposit,
         tracks: tracksFromMaslulim(heshbon),
         dmeiNihulHafkada: dmh, dmeiNihulTzvira: dmtAnnual,
         status: policyStatusLabel(status),
