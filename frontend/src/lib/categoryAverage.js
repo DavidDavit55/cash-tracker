@@ -53,21 +53,24 @@ export async function fetchOwnLTM(fundId) {
 
 // clientFundName: שם הקרן המדויקת של הלקוח (מ-fetchRealFundData, record.FUND_NAME) - ממנו
 // מזהים את קטגוריית המסלול ומחפשים את אותה קטגוריה אצל שאר החברות הגדולות.
+async function fetchCompanyLTM(company, category) {
+  const records = await fetchCompanyRecords(company);
+  if (!records.length) return null;
+  const latestPeriod = Math.max(...records.map(r => r.REPORT_PERIOD));
+  const match = records.find(r => r.REPORT_PERIOD === latestPeriod && classifyTrack(r.FUND_NAME) === category);
+  if (!match) return null;
+  const history = await fetchFundHistory(match.FUND_ID);
+  const ltm = ltmFromHistory(history);
+  return ltm != null ? { company, fundName: match.FUND_NAME, ltm } : null;
+}
+
 export async function fetchCategoryAverage(clientFundName) {
   const category = classifyTrack(clientFundName);
   if (!category) return null;
 
-  const byCompany = [];
-  for (const company of MAJOR_PENSION_COMPANIES) {
-    const records = await fetchCompanyRecords(company);
-    if (!records.length) continue;
-    const latestPeriod = Math.max(...records.map(r => r.REPORT_PERIOD));
-    const match = records.find(r => r.REPORT_PERIOD === latestPeriod && classifyTrack(r.FUND_NAME) === category);
-    if (!match) continue;
-    const history = await fetchFundHistory(match.FUND_ID);
-    const ltm = ltmFromHistory(history);
-    if (ltm != null) byCompany.push({ company, fundName: match.FUND_NAME, ltm });
-  }
+  // 9 חברות במקביל במקום ברצף - זה מה שגרם לכרטיס להיות איטי (עד 18 קריאות רשת אחת אחרי השנייה).
+  const results = await Promise.all(MAJOR_PENSION_COMPANIES.map(company => fetchCompanyLTM(company, category)));
+  const byCompany = results.filter(Boolean);
 
   if (!byCompany.length) return null;
   const average = byCompany.reduce((s, r) => s + r.ltm, 0) / byCompany.length;
