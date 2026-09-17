@@ -4,6 +4,7 @@ import { useMaslakaData } from '../hooks/useMaslakaData';
 import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
 import PendingDataScreen from '../components/PendingDataScreen';
 import { netWorthHistory, accounts, liabilities, pensionFunds, computeNetWorth } from '../mockData';
+import { dedupById } from '../lib/dedupById';
 
 const fmt = (n) => `₪${n.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`;
 
@@ -39,7 +40,7 @@ export default function NetWorth() {
     return <PendingDataScreen />;
   }
 
-  const managersProducts = [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type === 'managers');
+  const managersProducts = dedupById([...(insuranceOverride || []), ...(harBituachOverride || [])]).filter(p => p.type === 'managers');
   const pensionItems = [...(pensionOverride || []), ...managersProducts];
   const pensionTotal = hasRealData
     ? pensionItems.reduce((s, p) => s + (p.balance || 0), 0)

@@ -7,6 +7,7 @@ import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
 import PendingDataScreen from '../components/PendingDataScreen';
 import ProductCard, { fmt } from '../components/ProductCard';
 import { statusWarning } from '../lib/statusWarning';
+import { dedupById } from '../lib/dedupById';
 
 const YOUNG_AGE_THRESHOLD = 50; // ponytail: כלל אצבע פשוט, לא נוסחה פיננסית מלאה
 
@@ -104,7 +105,7 @@ export default function Pension() {
 
   // ביטוח מנהלים הוא בפועל מוצר חיסכון (יש לו צבירה) - מוצג כאן, לא בהגנות.
   // לא תמיד יש לנו את הצבירה שלו (למשל דוח הר ביטוח לא כולל אותה) - נספר רק מה שידוע.
-  const managersProducts = [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type === 'managers');
+  const managersProducts = dedupById([...(insuranceOverride || []), ...(harBituachOverride || [])]).filter(p => p.type === 'managers');
   const total = pensionFunds.reduce((s, p) => s + p.balance, 0)
     + managersProducts.reduce((s, p) => s + (p.balance || 0), 0);
 

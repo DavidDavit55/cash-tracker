@@ -5,6 +5,7 @@ import PendingDataScreen from '../components/PendingDataScreen';
 import ProductCard, { fmt } from '../components/ProductCard';
 import CoverageGapWidget from '../components/dashboard/CoverageGapWidget';
 import { statusWarning } from '../lib/statusWarning';
+import { dedupById } from '../lib/dedupById';
 
 const CATEGORY_LABELS = [
   ['health', 'ביטוח בריאות'],
@@ -32,7 +33,7 @@ export default function Protection() {
   // ב-preview/DEV אמיתי (בלי חשבון) מקבל מוקאפ.
   const isRealAccount = hasRealData && !isPreview;
   const insurancePolicies = isRealAccount
-    ? [...(insuranceOverride || []), ...(harBituachOverride || [])].filter(p => p.type !== 'managers')
+    ? dedupById([...(insuranceOverride || []), ...(harBituachOverride || [])]).filter(p => p.type !== 'managers')
     : mockInsurancePolicies;
   const monthlyTotal = insurancePolicies.reduce((s, p) => s + (p.monthlyPremium || 0), 0);
   const hasHealthInsurance = insurancePolicies.some(p => p.type === 'health');
