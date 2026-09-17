@@ -17,17 +17,62 @@ async function testHarBituachFile(file) {
   return Object.fromEntries(byTz);
 }
 
-function ResultBlock({ name, status, error, data }) {
+// מיפוי קטגוריית ביטוח -> תווית עברית (אותו מיפוי שמוצג ב-Protection.jsx)
+const INSURANCE_TYPE_LABELS = {
+  health: 'בריאות', life: 'חיים', disability: 'אובדן כושר עבודה', car: 'רכב',
+  home: 'דירה', business: 'עסק', accident: 'תאונות', managers: 'ביטוח מנהלים', other: 'אחר',
+};
+
+function ClassificationRow({ name, category, extra }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '0.82rem', borderBottom: '1px solid #f1f5f9' }}>
+      <span>{name}{extra ? ` (${extra})` : ''}</span>
+      <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{category}</span>
+    </div>
+  );
+}
+
+// טבלת סיווג - תמיד גלויה, בשביל לעבור מהר על הרבה קבצים ולראות שהסיווג הגיוני,
+// בלי לפתוח JSON גולמי לכל קובץ בנפרד.
+function MaslakaClassification({ data }) {
+  return (
+    <div style={{ marginTop: '8px' }}>
+      {data.pensionCards.map((c, i) => (
+        <ClassificationRow key={`p${i}`} name={c.name} category={c.type === 'pension' ? 'פנסיה' : 'גמל'} extra={c.productType} />
+      ))}
+      {data.insuranceCards.map((c, i) => (
+        <ClassificationRow key={`i${i}`} name={c.name} category={INSURANCE_TYPE_LABELS[c.type] || c.type} extra={c.groupClassification} />
+      ))}
+    </div>
+  );
+}
+
+function HarBituachClassification({ data }) {
+  return (
+    <div style={{ marginTop: '8px' }}>
+      {Object.entries(data).map(([tz, cards]) => (
+        <div key={tz}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>ת.ז {tz}</div>
+          {cards.map((c, i) => (
+            <ClassificationRow key={i} name={c.name} category={INSURANCE_TYPE_LABELS[c.type] || c.type} extra={c.groupClassification} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ResultBlock({ name, status, error, data, Classification }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="chart-card" style={{ padding: '12px 16px' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'right', display: 'flex', justifyContent: 'space-between' }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span>{status === 'ok' ? '✅' : '❌'} {name}</span>
-        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{open ? 'סגור' : 'פרטים'}</span>
-      </button>
+        <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+          {open ? 'סגור JSON' : 'JSON גולמי'}
+        </button>
+      </div>
+      {status === 'ok' && Classification && <Classification data={data} />}
       {open && (
         <pre style={{ fontSize: '0.72rem', whiteSpace: 'pre-wrap', marginTop: '10px', background: '#f8fafc', padding: '10px', borderRadius: '6px', direction: 'ltr', textAlign: 'left' }}>
           {error ? `שגיאה: ${error}` : JSON.stringify(data, null, 2)}
@@ -100,7 +145,7 @@ export default function ParserTest() {
         )}
       </div>
 
-      {maslakaResults.map((r, i) => <ResultBlock key={i} {...r} />)}
+      {maslakaResults.map((r, i) => <ResultBlock key={i} {...r} Classification={MaslakaClassification} />)}
 
       <div className="chart-card" style={{ marginTop: '20px' }}>
         <h3>קבצי הר ביטוח (Excel, אפשר כמה בבת אחת)</h3>
@@ -112,7 +157,7 @@ export default function ParserTest() {
         )}
       </div>
 
-      {harBituachResults.map((r, i) => <ResultBlock key={i} {...r} />)}
+      {harBituachResults.map((r, i) => <ResultBlock key={i} {...r} Classification={HarBituachClassification} />)}
     </div>
   );
 }
