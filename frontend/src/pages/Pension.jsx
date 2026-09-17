@@ -91,6 +91,59 @@ function PensionFundCard({ f, borderBottom }) {
   );
 }
 
+function ManagersFundCard({ p, borderBottom }) {
+  const [real, setReal] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchRealFundData(p.provider, 'managers', p.investmentTrack, p.name, p.investmentTrackCode)
+      .then(data => { if (!cancelled) setReal(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [p.provider, p.investmentTrack, p.name, p.investmentTrackCode]);
+
+  const stockExposure = real?.stockExposurePercent;
+
+  return (
+    <ProductCard
+      name={p.name}
+      subtitle={`${p.provider}${p.monthlyPremium != null ? ` • פרמיה ${fmt(p.monthlyPremium)}/חודש` : ''}`}
+      amount={p.balance != null ? fmt(p.balance) : 'צבירה לא ידועה'}
+      borderBottom={borderBottom}
+      warning={statusWarning(p).warning}
+      warningText={statusWarning(p).warningText}
+      badge={p.pledgedTo ? 'משועבד' : null}
+      details={
+        <div>
+          <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingRight: '18px', margin: 0, lineHeight: 1.8 }}>
+            {p.coverageItems.map((c, j) => <li key={j}>{c}</li>)}
+          </ul>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.8, marginTop: '6px' }}>
+            {p.feeFromDeposit != null && <div>דמי ניהול מהפקדה: <b style={{ color: 'var(--text)' }}>{p.feeFromDeposit}%</b></div>}
+            {p.feeFromAccumulation != null && <div>דמי ניהול מצבירה: <b style={{ color: 'var(--text)' }}>{p.feeFromAccumulation}%</b></div>}
+            {real && (
+              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '6px', padding: '5px 8px', margin: '4px 0', fontSize: '0.72rem', color: '#065f46' }}>
+                🟢 נתוני שוק אמיתיים מבוססים על: <b>{real.fundName}</b> (דוח {String(real.reportPeriod).slice(0,4)}-{String(real.reportPeriod).slice(4)})
+                {real.exactMatch ? ' — התאמה מדויקת לפי קוד המסלול.' : ' — התאמה לפי שם החברה בלבד, ייתכן שאינה הקרן המדויקת של הלקוח.'}
+              </div>
+            )}
+            {stockExposure != null && <div>חשיפה למניות: <b style={{ color: 'var(--text)' }}>{stockExposure}%</b></div>}
+            {real && (
+              <>
+                <div>תשואה 3 שנים (שוק): <b style={{ color: 'var(--text)' }}>{real.yieldTrailing3Yrs}%</b></div>
+                <div>תשואה 5 שנים (שוק): <b style={{ color: 'var(--text)' }}>{real.yieldTrailing5Yrs}%</b></div>
+              </>
+            )}
+            {!real && p.return12m != null && <div>תשואה 12 חודשים: <b style={{ color: 'var(--text)' }}>{p.return12m}%</b></div>}
+          </div>
+        </div>
+      }
+      ctaLabel="השווה עבורי"
+      ctaHref={buildWhatsAppLink(p.name, p.provider)}
+    />
+  );
+}
+
 export default function Pension() {
   const { pensionOverride, insuranceOverride, harBituachOverride, clientInfo, loading: maslakaLoading } = useMaslakaData() || {};
   const isPreview = useIsPreviewRoute();
@@ -149,23 +202,7 @@ export default function Pension() {
         <div className="chart-card" style={{ padding: '14px 0' }}>
           <h3 style={{ padding: '0 16px 10px' }}>ביטוח מנהלים (מוצר חיסכון)</h3>
           {managersProducts.map((p, i) => (
-            <ProductCard
-              key={p.id}
-              name={p.name}
-              subtitle={`${p.provider}${p.monthlyPremium != null ? ` • פרמיה ${fmt(p.monthlyPremium)}/חודש` : ''}`}
-              amount={p.balance != null ? fmt(p.balance) : 'צבירה לא ידועה'}
-              borderBottom={i < managersProducts.length - 1}
-              warning={statusWarning(p).warning}
-              warningText={statusWarning(p).warningText}
-              badge={p.pledgedTo ? 'משועבד' : null}
-              details={
-                <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingRight: '18px', margin: 0, lineHeight: 1.8 }}>
-                  {p.coverageItems.map((c, j) => <li key={j}>{c}</li>)}
-                </ul>
-              }
-              ctaLabel="השווה עבורי"
-              ctaHref={buildWhatsAppLink(p.name, p.provider)}
-            />
+            <ManagersFundCard key={p.id} p={p} borderBottom={i < managersProducts.length - 1} />
           ))}
         </div>
       )}

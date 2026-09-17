@@ -292,20 +292,22 @@ function extractInsurance(root, result) {
     };
 
     if (isManagers) {
+      const tracks = tracksFromMaslulim(heshbon);
       let tzviraTotal = 0;
-      const tracks = [];
       for (const maslul of allDescendants(heshbon, 'PerutMasluleiHashkaa')) {
         const amt = parseFloat(getVal(maslul, 'SCHUM-TZVIRA-BAMASLUL'));
-        const tname = getVal(maslul, 'SHEM-MASLUL-HASHKAA');
         if (!isNaN(amt)) tzviraTotal += amt;
-        if (tname) tracks.push(tname.replace(/\s+/g, ' ').trim());
       }
       if (!tzviraTotal) {
         const fb = getVal(heshbon, 'SCHUM-NECHONUT') || getVal(heshbon, 'YITRAT-ZCHUYOT') || '';
         tzviraTotal = parseFloat(fb) || 0;
       }
       entry.tzvira = tzviraTotal ? String(Math.round(tzviraTotal)) : '';
-      entry.track = tracks[0] || (getVal(heshbon, 'SHEM-MASLUL-HASHKAA') || '').replace(/\s+/g, ' ').trim();
+      // מסלול ההשקעה העיקרי (הכי גדול בצבירה) - כולל הקוד המספרי (KOD-MASLUL-HASHKAA) שממנו
+      // אפשר לחלץ FUND_ID מדויק מול data.gov.il, בדיוק כמו בפנסיה/גמל.
+      const mainTrack = tracks.length ? tracks.reduce((a, b) => (b.pct || 0) > (a.pct || 0) ? b : a) : null;
+      entry.track = mainTrack?.name || '';
+      entry.trackCode = mainTrack?.kod || '';
 
       let dmTzvira = '', dmHafkada = '';
       for (const mivne of allDescendants(heshbon, 'PerutMivneDmeiNihul')) {

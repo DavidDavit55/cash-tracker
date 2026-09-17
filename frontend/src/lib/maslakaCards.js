@@ -88,6 +88,11 @@ function mapInsuranceItemToCard(entry, isManagers) {
     warningText: isTempRisk ? 'ריסק זמני' : null,
     pledgedTo: entry.pledgedTo || null,
     coverageItems: coverageItems.length ? coverageItems : ['אין פרטי כיסוי נוספים בקובץ המסלקה'],
+    feeFromDeposit: isManagers && entry.dmeiNihulHafkada ? parseFloat(entry.dmeiNihulHafkada) : null,
+    feeFromAccumulation: isManagers && entry.dmeiNihulTzvira ? parseFloat(entry.dmeiNihulTzvira) : null,
+    investmentTrack: isManagers ? (entry.track || '') : null,
+    investmentTrackCode: isManagers ? (entry.trackCode || '') : null,
+    return12m: isManagers && entry.netReturn ? parseFloat(entry.netReturn) : null,
   };
 }
 

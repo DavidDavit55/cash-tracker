@@ -3,6 +3,14 @@
 
 const PENSION_NET_RESOURCE = '6d47d6b5-cb08-488b-b333-f1e717b1e1bd';
 const GEMEL_NET_RESOURCE = 'a30dcbea-a1d2-482c-ae29-8f781f5025fb';
+const MANAGERS_NET_RESOURCE = 'c6c62cc7-fe02-4b18-8f3e-813abfbb4647';
+
+// דאטהסט ביטוחי המנהלים משתמש בשם שדה שונה ל-legal id של החברה המנהלת מאשר פנסיה/גמל.
+const LEGAL_ID_FIELD = {
+  [PENSION_NET_RESOURCE]: 'MANAGING_CORPORATION_LEGAL_ID',
+  [GEMEL_NET_RESOURCE]: 'MANAGING_CORPORATION_LEGAL_ID',
+  [MANAGERS_NET_RESOURCE]: 'PARENT_COMPANY_LEGAL_ID',
+};
 
 // KOD-MASLUL-HASHKAA במסלקה מקודד בתוכו את ה-FUND_ID של הדאטהסט הממשלתי: 9 הספרות הראשונות
 // הן MANAGING_CORPORATION_LEGAL_ID, וה-FUND_ID עצמו הוא הסיומת (לא כל מה שנשאר אחרי הקידומת -
@@ -43,7 +51,8 @@ async function fetchCandidateRecords(resourceId, companyName) {
 }
 
 export async function fetchRealFundData(providerName, fundType, trackName, planName, trackCode) {
-  const resourceId = fundType === 'pension' ? PENSION_NET_RESOURCE : GEMEL_NET_RESOURCE;
+  const resourceId = fundType === 'pension' ? PENSION_NET_RESOURCE : fundType === 'managers' ? MANAGERS_NET_RESOURCE : GEMEL_NET_RESOURCE;
+  const legalIdField = LEGAL_ID_FIELD[resourceId];
 
   // התאמה מדויקת: אם יש לנו FUND_ID שחולץ מ-KOD-MASLUL-HASHKAA, מחפשים ישירות לפי מזהה
   // ואין צורך בניחוש לפי שם בכלל. מאמתים מול ה-legal id כדי לפסול התאמות מקריות.
@@ -54,7 +63,7 @@ export async function fetchRealFundData(providerName, fundType, trackName, planN
       const res = await fetch(url);
       const data = await res.json();
       const record = data.result.records?.[0];
-      if (record && String(record.MANAGING_CORPORATION_LEGAL_ID) === parts.legalId) return toFundData(record, true);
+      if (record && String(record[legalIdField]) === parts.legalId) return toFundData(record, true);
     }
   }
 
