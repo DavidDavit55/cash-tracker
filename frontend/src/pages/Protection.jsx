@@ -1,4 +1,6 @@
+import { useLocation } from 'react-router-dom';
 import { insurancePolicies as mockInsurancePolicies, buildCalendlyLink, CTA_LABEL } from '../mockData';
+import { useAuth } from '../hooks/useAuth';
 import { useMaslakaData } from '../hooks/useMaslakaData';
 import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
 import PendingDataScreen from '../components/PendingDataScreen';
@@ -21,6 +23,9 @@ const CATEGORY_LABELS = [
 export default function Protection() {
   const { pensionOverride, insuranceOverride, harBituachOverride, clientInfo, loading: maslakaLoading } = useMaslakaData() || {};
   const clientName = clientInfo ? `${clientInfo.first || ''} ${clientInfo.last || ''}`.trim() : undefined;
+  const { user } = useAuth();
+  const isSandbox = useLocation().pathname.startsWith('/admin/parser-test');
+  const clientEmail = isSandbox ? undefined : user?.email;
   const isPreview = useIsPreviewRoute();
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
 
@@ -86,7 +91,7 @@ export default function Protection() {
                     </ul>
                   }
                   ctaLabel={CTA_LABEL}
-                  ctaHref={buildCalendlyLink(clientName)}
+                  ctaHref={buildCalendlyLink(clientName, clientEmail)}
                 />
               ))}
             </div>

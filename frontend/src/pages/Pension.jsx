@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { pensionFunds as mockPensionFunds, buildCalendlyLink, CTA_LABEL, userProfile } from '../mockData';
 import { fetchRealFundData } from '../lib/pensionNetApi';
 import { fetchCategoryAverage, fetchOwnLTM } from '../lib/categoryAverage';
+import { useAuth } from '../hooks/useAuth';
 import { useMaslakaData } from '../hooks/useMaslakaData';
 import { getAgencyPensionFee, getAgencyGemelFee } from '../data/agencyFeeAgreements';
 import { useIsPreviewRoute } from '../hooks/useIsPreviewRoute';
@@ -22,7 +24,7 @@ function getBestDealForFund(f) {
     : getAgencyGemelFee(f.provider, f.balance, f.type === 'gemel');
 }
 
-function PensionFundCard({ f, borderBottom, clientName }) {
+function PensionFundCard({ f, borderBottom, clientName, clientEmail }) {
   const [real, setReal] = useState(null);
   const [realStatus, setRealStatus] = useState('loading'); // loading | ok | none
   const [categoryAvg, setCategoryAvg] = useState(null);
@@ -99,12 +101,12 @@ function PensionFundCard({ f, borderBottom, clientName }) {
         </div>
       }
       ctaLabel={CTA_LABEL}
-      ctaHref={buildCalendlyLink(clientName)}
+      ctaHref={buildCalendlyLink(clientName, clientEmail)}
     />
   );
 }
 
-function ManagersFundCard({ p, borderBottom, clientName }) {
+function ManagersFundCard({ p, borderBottom, clientName, clientEmail }) {
   const [real, setReal] = useState(null);
 
   useEffect(() => {
@@ -146,13 +148,15 @@ function ManagersFundCard({ p, borderBottom, clientName }) {
         </div>
       }
       ctaLabel={CTA_LABEL}
-      ctaHref={buildCalendlyLink(clientName)}
+      ctaHref={buildCalendlyLink(clientName, clientEmail)}
     />
   );
 }
 
 export default function Pension() {
   const { pensionOverride, insuranceOverride, harBituachOverride, clientInfo, loading: maslakaLoading } = useMaslakaData() || {};
+  const { user } = useAuth();
+  const isSandbox = useLocation().pathname.startsWith('/admin/parser-test');
   const isPreview = useIsPreviewRoute();
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
 
@@ -163,6 +167,9 @@ export default function Pension() {
 
   const pensionFunds = pensionOverride || mockPensionFunds;
   const clientName = clientInfo ? `${clientInfo.first || ''} ${clientInfo.last || ''}`.trim() : undefined;
+  // המייל של המשתמש המחובר הוא באמת מייל הלקוח רק כשזה הוא עצמו מציג את הנתונים שלו -
+  // בסנדבוקס (admin/parser-test) המשתמש המחובר הוא דוד, לא הלקוח שבתצוגה.
+  const clientEmail = isSandbox ? undefined : user?.email;
 
   // 4 קטגוריות נפרדות במקום רשימה שטוחה אחת: פנסיה, קרנות השתלמות, גמל (כל השאר מ-type='gemel'),
   // וביטוח מנהלים (כבר קיים כקבוצה נפרדת למטה).
@@ -201,7 +208,7 @@ export default function Pension() {
         <div className="chart-card" style={{ padding: '14px 0' }} key={label}>
           <h3 style={{ padding: '0 16px 10px' }}>{label}</h3>
           {items.map((f, i) => (
-            <PensionFundCard key={f.id} f={f} borderBottom={i < items.length - 1} clientName={clientName} />
+            <PensionFundCard key={f.id} f={f} borderBottom={i < items.length - 1} clientName={clientName} clientEmail={clientEmail} />
           ))}
         </div>
       ))}
@@ -210,7 +217,7 @@ export default function Pension() {
         <div className="chart-card" style={{ padding: '14px 0' }}>
           <h3 style={{ padding: '0 16px 10px' }}>ביטוח מנהלים (מוצר חיסכון)</h3>
           {managersProducts.map((p, i) => (
-            <ManagersFundCard key={p.id} p={p} borderBottom={i < managersProducts.length - 1} clientName={clientName} />
+            <ManagersFundCard key={p.id} p={p} borderBottom={i < managersProducts.length - 1} clientName={clientName} clientEmail={clientEmail} />
           ))}
         </div>
       )}

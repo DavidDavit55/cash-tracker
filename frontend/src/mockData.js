@@ -5,10 +5,14 @@ export const AGENT_WHATSAPP = '972500000000'; // TODO: להחליף במספר �
 export const CALENDLY_URL = 'https://calendly.com/david-davit-fin/30min';
 export const CTA_LABEL = 'קבע פגישה עם מתכנן פנסיוני';
 
-// שם הלקוח מוזרם לקישור (?name=) כדי שיופיע בדף התיאום וביומן של דוד אחרי הקביעה -
+// שם ומייל הלקוח מוזרמים לקישור (?name=&email=) כדי שיהיו כבר ממולאים בדף התיאום -
 // שם האירוע עצמו ("בדיקת תיק"/"תכנון פנסיוני") נקבע פעם אחת בהגדרות Calendly עצמו, לא כאן.
-export function buildCalendlyLink(clientName) {
-  return clientName ? `${CALENDLY_URL}?name=${encodeURIComponent(clientName)}` : CALENDLY_URL;
+export function buildCalendlyLink(clientName, clientEmail) {
+  const params = new URLSearchParams();
+  if (clientName) params.set('name', clientName);
+  if (clientEmail) params.set('email', clientEmail);
+  const qs = params.toString();
+  return qs ? `${CALENDLY_URL}?${qs}` : CALENDLY_URL;
 }
 
 export const netWorthHistory = [
