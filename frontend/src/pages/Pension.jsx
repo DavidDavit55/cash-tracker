@@ -134,12 +134,6 @@ function ManagersFundCard({ p, borderBottom }) {
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.8, marginTop: '6px' }}>
             {p.feeFromDeposit != null && <div>דמי ניהול מהפקדה: <b style={{ color: 'var(--text)' }}>{p.feeFromDeposit}%</b></div>}
             {p.feeFromAccumulation != null && <div>דמי ניהול מצבירה: <b style={{ color: 'var(--text)' }}>{p.feeFromAccumulation}%</b></div>}
-            {real && (
-              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '6px', padding: '5px 8px', margin: '4px 0', fontSize: '0.72rem', color: '#065f46' }}>
-                🟢 נתוני שוק אמיתיים מבוססים על: <b>{real.fundName}</b> (דוח {String(real.reportPeriod).slice(0,4)}-{String(real.reportPeriod).slice(4)})
-                {real.exactMatch ? ' — התאמה מדויקת לפי קוד המסלול.' : ' — התאמה לפי שם החברה בלבד, ייתכן שאינה הקרן המדויקת של הלקוח.'}
-              </div>
-            )}
             {stockExposure != null && <div>חשיפה למניות: <b style={{ color: 'var(--text)' }}>{stockExposure}%</b></div>}
             {real && (
               <>
