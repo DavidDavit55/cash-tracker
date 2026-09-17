@@ -103,6 +103,17 @@ export default function Pension() {
 
   const pensionFunds = pensionOverride || mockPensionFunds;
 
+  // 4 קטגוריות נפרדות במקום רשימה שטוחה אחת: פנסיה, קרנות השתלמות, גמל (כל השאר מ-type='gemel'),
+  // וביטוח מנהלים (כבר קיים כקבוצה נפרדת למטה).
+  const pensionOnly = pensionFunds.filter(f => f.type === 'pension');
+  const studyFunds = pensionFunds.filter(f => f.type === 'gemel' && f.productType === 'קרן השתלמות');
+  const gemelOnly = pensionFunds.filter(f => f.type === 'gemel' && f.productType !== 'קרן השתלמות');
+  const FUND_GROUPS = [
+    { label: 'פנסיה', items: pensionOnly },
+    { label: 'גמל', items: gemelOnly },
+    { label: 'קרנות השתלמות', items: studyFunds },
+  ];
+
   // ביטוח מנהלים הוא בפועל מוצר חיסכון (יש לו צבירה) - מוצג כאן, לא בהגנות.
   // לא תמיד יש לנו את הצבירה שלו (למשל דוח הר ביטוח לא כולל אותה) - נספר רק מה שידוע.
   const managersProducts = dedupById([...(insuranceOverride || []), ...(harBituachOverride || [])]).filter(p => p.type === 'managers');
@@ -125,11 +136,14 @@ export default function Pension() {
         <div className="summary-label">סך הכל צבור</div>
       </div>
 
-      <div className="chart-card" style={{ padding: '14px 0' }}>
-        {pensionFunds.map((f, i) => (
-          <PensionFundCard key={f.id} f={f} borderBottom={i < pensionFunds.length - 1} />
-        ))}
-      </div>
+      {FUND_GROUPS.map(({ label, items }) => items.length > 0 && (
+        <div className="chart-card" style={{ padding: '14px 0' }} key={label}>
+          <h3 style={{ padding: '0 16px 10px' }}>{label}</h3>
+          {items.map((f, i) => (
+            <PensionFundCard key={f.id} f={f} borderBottom={i < items.length - 1} />
+          ))}
+        </div>
+      ))}
 
       {managersProducts.length > 0 && (
         <div className="chart-card" style={{ padding: '14px 0' }}>
