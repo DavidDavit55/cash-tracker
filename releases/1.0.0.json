@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "status": "preparing",
+  "decisionDate": "2026-10-02",
+  "timezone": "Asia/Jerusalem",
+  "productionReleaseAuthorized": false,
+  "releasedAt": null,
+  "baseline": {
+    "observedDate": "2026-10-02",
+    "frontend": {
+      "projectId": "215a7137-0bd8-4986-a80f-a2de4c89f6c5",
+      "environmentId": "bc1bb91e-9e30-4cfb-b163-c772c6818601",
+      "serviceId": "ecaa359d-ebbc-499b-a4ce-7fe676970e23",
+      "deploymentId": "b17b2a0e-2f2f-4395-8bef-c1427740cdf7",
+      "status": "SUCCESS",
+      "url": "https://networth.davit-fin.co.il",
+      "publicSmokeStatus": 200,
+      "observedAssets": ["/assets/index-BpdUDrB3.js", "/assets/index-DXcV4hPy.css"]
+    },
+    "backend": {
+      "projectId": "325bab1a-8ede-4c26-a00f-1183ed99846c",
+      "environmentId": "46cf3fae-f54a-4b18-9a71-81d5ac0bf3b2",
+      "serviceId": "cef79ba4-7f7b-497a-8df9-7d3609a63e15",
+      "deploymentId": "0a338e66-382c-4786-867d-e7b8ee0a5a8d",
+      "status": "SUCCESS",
+      "healthUrl": "https://cash-tracker-production-35dd.up.railway.app/api/health",
+      "publicSmokeStatus": 200,
+      "healthBody": {"status": "ok"}
+    },
+    "historicalSource": ".release/20260927-gmail-body",
+    "historicalReleaseRecord": "docs/gmail-body-release-2026-09-27.md",
+    "sourceSnapshot": null,
+    "sourceSnapshotVerified": false,
+    "exactDeployedArtifactRecovered": false,
+    "restoreDrillPassed": false,
+    "databaseBackupVerified": false,
+    "documentBackupVerified": false
+  },
+  "candidate": {
+    "sourceCommit": null,
+    "sourceSnapshot": null,
+    "sourceSnapshotVerified": false,
+    "artifactSha256": null,
+    "stagingDeploymentId": null,
+    "productionDeploymentIds": []
+  },
+  "gates": [
+    {"id":"scope-and-baseline","status":"in_progress"},
+    {"id":"reviewed-source-and-reproducible-build","status":"pending"},
+    {"id":"production-crm-auth-and-storage","status":"blocked","reason":"CRM route and services currently use staging-only entrypoint and APIs"},
+    {"id":"database-documents-backup-and-restore","status":"pending"},
+    {"id":"additive-migrations-and-rollback","status":"pending"},
+    {"id":"existing-live-regression-and-account-isolation","status":"pending"},
+    {"id":"business-mail-read-send-consent-and-recipient-checks","status":"pending"},
+    {"id":"business-calendar-and-tasks-deduplication","status":"pending"},
+    {"id":"save-failure-recovery-and-concurrent-edits","status":"pending"},
+    {"id":"documents-access-retention-and-upload-validation","status":"pending"},
+    {"id":"production-workflows-and-legacy-records","status":"pending"},
+    {"id":"remove-demo-actions-and-verify-feature-flags","status":"pending"},
+    {"id":"security-dependencies-and-privacy-review","status":"pending"},
+    {"id":"monitoring-retries-and-send-reconciliation","status":"pending"},
+    {"id":"israel-time-business-days-and-limitations","status":"pending"},
+    {"id":"end-to-end-acceptance-and-owner-approval","status":"pending"}
+  ]
+}

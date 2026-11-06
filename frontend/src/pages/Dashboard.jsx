@@ -36,7 +36,7 @@ export default function Dashboard() {
     }
   }, [expandedCat, catExpenses, month, year]);
 
-  if (!stats) return <div className="loading">טוען...</div>;
+  if (!stats) return <div className="app-loading" role="status">טוען...</div>;
 
   const totalSpent = parseFloat(stats.total?.total || 0);
   const totalIncome = parseFloat(incomeStats?.total?.total || 0);

@@ -1,0 +1,24 @@
+{
+  "environment": "staging",
+  "productionDeploymentAuthorized": false,
+  "deploymentId": "bdb2641b-dc9f-434a-9c1f-315f223d34e2",
+  "previousDeploymentId": "7b519647-9d59-4081-b711-a52170824084",
+  "status": "deployed-verified",
+  "postRelease": {"health": "passed", "accessControls": "passed", "testedBundleSha256Match": true, "crmRevision": 882},
+  "crmChunk": "StagingCrm-DI1fRwKj.js",
+  "tests": {"regression": 42, "isolatedBrowserScenarios": 4, "runtimeImports": 58},
+  "sourceSnapshot": "staging-20261004-payroll-reply",
+  "previousArtifact": ".release/staging-20261004-before-payroll-reply-artifact",
+  "privateBackupRevision": 882,
+  "privateBackupFileCount": 14,
+  "crmWritesByRelease": 0,
+  "externalEmailsSentByRelease": 0,
+  "rules": {
+    "replyFollowupBusinessDays": 2,
+    "depositDue": "20th of month after payroll email, unchanged and independent",
+    "receiptOnlyIsConfirmation": false,
+    "confirmationIsDeposit": false,
+    "replyClassification": "manual",
+    "holidayCalendar": "not implemented; existing Sunday-Thursday business-day model"
+  }
+}

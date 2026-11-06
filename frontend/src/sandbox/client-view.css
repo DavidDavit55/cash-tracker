@@ -1,0 +1,12 @@
+/* Client presentation: retain financial assumptions, hide development chrome. */
+.sb-app.sb-client-view{--header:74px}
+.sb-client-view .topbar{top:0}
+.sb-client-view .sb-banner,.sb-client-view .sidebar-bottom,.sb-client-view .sb-source-badge,.sb-client-view .sb-context-bar,.sb-client-view .page-footer,.sb-client-view .ai-fab,.sb-client-view .ob-launch,.sb-client-view .updated,.sb-client-view .sb-allocation>.sb-source-note,.sb-client-view .sb-insurance-hero>p,.sb-client-view .sb-profile>p,.sb-client-view .sb-profile>button,.sb-client-view .detail-meta>span:nth-child(3){display:none}
+.sb-client-view .sb-greeting .sb-button-row>.primary, .sb-client-view .sb-empty>button{display:none}
+.sb-client-view .sb-greeting{margin-bottom:30px}
+.sb-client-view .sidebar nav>button:nth-last-child(2){border:0;margin-top:0}
+@media(max-width:760px){.desktop-app.sb-client-view{--header:74px}}
+
+.sb-client-view .sidebar nav>button:last-child{border:0;margin-top:0;padding-top:0;height:54px}
+
+@media(min-width:761px){.sb-app .sidebar .nav-item{flex-direction:row}}

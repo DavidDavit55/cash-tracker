@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {mkdtempSync} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import http from 'node:http';
+import {openStore,createStoreHandler} from './local-crm-store.mjs';
+import {makeClient} from './workflow-model.js';
+const directory=mkdtempSync(path.join(os.tmpdir(),'networth-store-test-'));
+let store=openStore(directory);
+const state={clients:[makeClient({name:'SYNTHETIC STORAGE TEST',phone:'0500000000'})],selected:null};
+assert.equal(store.read().state,null);
+assert.equal(store.save(0,state).revision,1);
+assert.throws(()=>store.save(0,{clients:[]}),e=>e.status===409);
+assert.throws(()=>store.save(1,{clients:[{}]}),e=>e.status===400);
+store.close();store=openStore(directory);
+assert.deepEqual(store.read().state,state);
+const server=http.createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const port=server.address().port,base=`http://127.0.0.1:${port}`,handler=createStoreHandler(store,port);
+server.on('request',async(req,res)=>{if(!await handler(req,res)){res.statusCode=404;res.end();}});
+try{
+ assert.equal((await fetch(base+'/sandbox-store')).status,403);
+ const headers={'X-Sandbox-Request':'1'};
+ const data=await(await fetch(base+'/sandbox-store',{headers})).json();
+ const writeHeaders={...headers,'Content-Type':'application/json','X-Sandbox-Token':data.token,Origin:base};
+ assert.equal((await fetch(base+'/sandbox-store',{method:'PUT',headers:{...writeHeaders,Origin:'https://example.com'},body:JSON.stringify({revision:1,state})})).status,403);
+ assert.equal((await fetch(base+'/sandbox-store',{method:'PUT',headers:{...writeHeaders,'X-Sandbox-Token':'wrong'},body:'{}'})).status,403);
+ assert.equal((await fetch(base+'/sandbox-store',{method:'PUT',headers:writeHeaders,body:JSON.stringify({revision:1,state})})).status,200);
+ assert.equal((await fetch(base+'/sandbox-store',{method:'PUT',headers:writeHeaders,body:JSON.stringify({revision:1,state})})).status,409);
+ assert.equal((await fetch(base+'/sandbox-store',{method:'DELETE',headers})).status,405);
+ const wrongHost=await new Promise((resolve,reject)=>{http.get(base+'/sandbox-store',{headers:{...headers,host:'evil.test'}},r=>{r.resume();resolve(r.statusCode);}).on('error',reject);});
+ assert.equal(wrongHost,403);
+ console.log('PASS SQLite persistence/reopen, validation, optimistic revision conflict, origin/host/token isolation and methods');
+}finally{await new Promise(r=>server.close(r));store.close();}

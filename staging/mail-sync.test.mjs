@@ -1,0 +1,44 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {PGlite} from '../.release/budget-test-runtime/node_modules/@electric-sql/pglite/dist/index.js';
+import {createMailSync,syncSchema,matchMessage,searchQuery,saveReadConnection,READ_SCOPE} from './mail-sync.mjs';
+import {createCalendar,schema,oauthPurposeSchema,calendarConfig} from './calendar.mjs';
+const owner='11111111-1111-4111-8111-111111111111';
+const env={APP_ENV:'staging',PILOT_CALENDAR_ENABLED:'true',PILOT_MAIL_CLIENT_ID:'test',PILOT_MAIL_CLIENT_SECRET:'test',PILOT_MAIL_ENCRYPTION_KEY:Buffer.alloc(32,7).toString('base64'),PILOT_MAIL_REDIRECT_URI:'https://networth-staging-staging.up.railway.app/api/staging/mail/callback'};
+const clients=[{id:'a',name:'Test Person',identity:'204173496',email:'client@example.com'},{id:'b',name:'Other Person',identity:'057254476',email:'other@example.com'}];
+const response=()=>({cookies:{},set(){return this;},cookie(k,v){this.cookies[k]=v;return this;},clearCookie(){},json(v){this.body=v;return this;},status(v){this.code=v;return this;},redirect(v){this.url=v;return this;}});
+test('matching is conservative and daily reports excluded',()=>{
+ assert.equal(matchMessage({subject:'204173496'},clients).clientId,'a');
+ assert.equal(matchMessage({subject:'204173496 057254476'},clients).clientId,null);
+ assert.equal(matchMessage({subject:'Test Person'},clients).clientId,null);
+ assert.equal(matchMessage({subject:'204173496',bodyScan:{status:'partial'}},clients).clientId,null);
+ assert.equal(matchMessage({subject:'דוח יומי 204173496'},clients).skip,true);
+ assert.equal(searchQuery([]),null);assert.ok(searchQuery(clients).includes('204173496'));
+});
+test('read OAuth, private EML/PDF, deduplication, durable schedule and no CRM updates',async()=>{
+ const db=new PGlite();await db.exec(`CREATE TABLE users(id uuid PRIMARY KEY);CREATE TABLE staging_crm(owner_id uuid PRIMARY KEY,state jsonb);${schema};${oauthPurposeSchema};${syncSchema}`);await db.query('INSERT INTO users VALUES($1)',[owner]);await db.query('INSERT INTO staging_crm VALUES($1,$2)',[owner,JSON.stringify({clients})]);
+ const pool={query:(s,a)=>db.query(s,a),connect:async()=>({query:(s,a)=>db.query(s,a),release(){}})};
+ let fail=false,wrong=false;
+ const request=async(url,opt={})=>{
+  assert.ok(!url.includes('/send'));const json=d=>new Response(JSON.stringify(d));
+  if(url.includes('oauth2.googleapis.com/token'))return json({access_token:'access',refresh_token:'secret',scope:READ_SCOPE});
+  if(url.endsWith('/userinfo'))return json({email:wrong?'wrong@example.com':'david@davit-fin.co.il',verified_email:true});
+  if(fail)return new Response('{}',{status:403});
+  if(url.includes('messages?'))return json({messages:[{id:'m1'}]});
+  if(url.endsWith('format=raw'))return json({raw:Buffer.from('From: sender@example.com\r\n\r\nOriginal').toString('base64url')});
+  return json({id:'m1',threadId:'t1',internalDate:'1790800000000',payload:{headers:[{name:'Subject',value:'204173496'}],parts:[{mimeType:'application/pdf',filename:'proof.pdf',body:{data:Buffer.from('%PDF-proof').toString('base64url')}}]}});
+ };
+ const calendar=createCalendar({pool,env,request}),req={user:{id:owner}};
+ const start=response();await calendar.readBusinessConnect(req,start);const u=new URL(start.body.url);assert.ok(u.searchParams.get('scope').includes(READ_SCOPE));assert.ok(!u.searchParams.get('scope').includes('gmail.send'));
+ const done=response();await calendar.callback({query:{state:u.searchParams.get('state'),code:'code'},headers:{cookie:'nw_calendar_oauth='+start.cookies.nw_calendar_oauth}},done);assert.ok(done.url.endsWith('read=connected'));
+ const api=createMailSync({pool,env,request});await api.run(owner);await api.run(owner);
+ const rows=(await db.query('SELECT * FROM staging_read_messages')).rows;assert.equal(rows.length,1);assert.equal(rows[0].client_id,'a');assert.equal(rows[0].pdfs.length,1);assert.ok(Buffer.from(rows[0].raw).toString().includes('Original'));
+ assert.deepEqual((await db.query('SELECT state FROM staging_crm')).rows[0].state,{clients});
+ const connection=(await db.query('SELECT * FROM staging_read_connections')).rows[0];assert.ok(new Date(connection.next_sync)-new Date(connection.last_sync)>=43199000);assert.ok(!connection.token.includes('secret'));
+ const listing=response();await api.list({...req,query:{clientId:'a'}},listing);assert.equal(listing.body.rows.length,1);assert.equal(listing.body.rows[0].raw,undefined);
+ const central=response();await api.list({...req,query:{}},central);assert.equal(central.body.rows.length,1);
+ const other=response();await api.list({...req,query:{clientId:'b'}},other);assert.equal(other.body.rows.length,0);
+ const stranger=response();await api.list({user:{id:'22222222-2222-4222-8222-222222222222'},query:{}},stranger);assert.equal(stranger.body.rows.length,0);
+ fail=true;await api.run(owner);assert.ok((await db.query('SELECT error FROM staging_read_connections')).rows[0].error);
+ await db.close();
+});

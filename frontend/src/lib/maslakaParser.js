@@ -97,14 +97,16 @@ function mivneDmeiNihul(heshbon) {
 
 // יתרה נוכחית = סכום PerutYitrot (לא TOTAL-CHISACHON-MITZTABER-TZAFUY - זו תחזית לפרישה, לא יתרה נוכחית)
 function sumYitrot(heshbon) {
-  let tagmulim = 0, pitzuim = 0;
+  let tagmulim = 0, pitzuim = 0, total = 0, reported = false;
   for (const py of allDescendants(heshbon, 'PerutYitrot')) {
     const sug = directChildText(py, 'KOD-SUG-HAFRASHA');
-    const amt = parseFloat(directChildText(py, 'TOTAL-CHISACHON-MTZBR')) || 0;
+    const parsed = parseFloat(directChildText(py, 'TOTAL-CHISACHON-MTZBR'));
+    const amt = Number.isFinite(parsed) ? parsed : 0;
+    if (Number.isFinite(parsed)) { total += amt; reported = true; }
     if (sug === '2' || sug === '3') tagmulim += amt;
     else if (sug === '1') pitzuim += amt;
   }
-  return { tagmulim, pitzuim };
+  return { tagmulim, pitzuim, total, reported };
 }
 
 // תפס אמיתי: נמצא בקובץ אמיתי אותו מסלול גיל כתוב פעם "לבני 50 ומטה" ופעם "לבני 05 ומטה" -
@@ -169,8 +171,7 @@ function extractPension(root, result) {
     const sugKeren = getVal(heshbon, 'SUG-KEREN-PENSIA');
     const pensionType = { '1': 'פנסיה ותיקה', '2': 'פנסיה מקיפה', '3': 'פנסיה משלימה כללית' }[sugKeren] || '';
 
-    const { tagmulim, pitzuim } = sumYitrot(heshbon);
-    const savingsVal = tagmulim + pitzuim;
+    const { tagmulim, pitzuim, total: savingsVal, reported } = sumYitrot(heshbon);
 
     const { dmhMivne, dmtMivne } = mivneDmeiNihul(heshbon);
     const dmh = dmhMivne || getVal(heshbon, 'MEMOTZA-SHEUR-DMEI-NIHUL-HAFKADA') || getVal(heshbon, 'SHEUR-DMEI-NIHUL-HAFKADA');
@@ -186,8 +187,9 @@ function extractPension(root, result) {
     if (policyNum) {
       result.pension.push({
         policyNum, company, pensionType, plan,
+        ...reportedRestrictions(heshbon),
         joinDate: fmtDate(joinDate), retAge,
-        savings: savingsVal > 0 ? savingsVal.toFixed(2) : '',
+        savings: reported ? savingsVal.toFixed(2) : '',
         tagmulim: tagmulim ? String(Math.round(tagmulim)) : '',
         pitzuim: pitzuim ? String(Math.round(pitzuim)) : '',
         monthlyPension, netReturn, returnYear, monthlyDeposit,
@@ -200,7 +202,15 @@ function extractPension(root, result) {
   }
 }
 
-function extractStudyFund(root, result) {
+function reportedRestrictions(account) {
+  const flag = tag => {
+    const values = allDescendants(account, tag).map(n => n.textContent.trim());
+    return values.includes('1') ? true : values.length && values.every(v => v === '2') ? false : null;
+  };
+  return { hasLien: flag('HUTAL-IKUL'), hasPledge: flag('HUTAL-SHIABUD') };
+}
+
+function extractStudyFund(root, result, options = {}) {
   const companyKgm = getVal(root, 'SHEM-YATZRAN');
   const SUG_LABELS = { '3': 'קרן השתלמות', '4': 'קופת גמל', '9': 'גמל להשקעה', '10': 'חיסכון לכל ילד' };
 
@@ -262,9 +272,16 @@ function extractStudyFund(root, result) {
         }
       }
 
-      if (tzviraVal > 0) {
+      if (options.includeEmptyAccounts) {
+        // An historical report must retain accounts even with zero or unknown balances.
+        // Do not substitute a projected retirement amount for a reported current balance.
+        const reported = allDescendants(heshbon, 'PerutYitrot').map(py => directChildText(py, 'TOTAL-CHISACHON-MTZBR')).filter(v => v !== '' && Number.isFinite(Number(v)));
+        tzvira = reported.length ? String(round2(reported.reduce((sum, v) => sum + Number(v), 0))) : '';
+      }
+      if (tzviraVal > 0 || (options.includeEmptyAccounts && sfPnum)) {
         result.study_fund.push({
           productType: effectiveLabel, company: companyKgm, plan: tochnit, policyNum: sfPnum,
+          ...reportedRestrictions(heshbon),
           tzvira, oved: oved ? String(Math.round(oved)) : '', maavid: maavid ? String(Math.round(maavid)) : '',
           netReturn: net, returnYear, joinDate: fmtDate(join),
           liquidityDate, liquidityStatus,
@@ -305,6 +322,7 @@ function extractInsurance(root, result) {
     const isActive = status !== 'לא פעיל'; // ריסק זמני - הכיסוי עדיין פעיל, רק ההפקדות מוקפאות
     const entry = {
       policyNum: pnum, company: companyIng, plan: tochnit || rootLabel, type: rootLabel,
+      ...reportedRestrictions(heshbon),
       status, joinDate: fmtDate(join), premium: isActive ? prem : '',
     };
 
@@ -359,13 +377,13 @@ function extractInsurance(root, result) {
       for (const yesodi of allDescendants(heshbon, 'SchumeiBituahYesodi')) {
         const v = directChildText(yesodi, 'SCHUM-BITUAH-LEMAVET');
         const f = parseFloat(v);
-        if (v && !isNaN(f)) { sumInsured = String(Math.round(f)); break; }
+        if (v && Number.isFinite(f) && f > 0) { sumInsured = String(round2(f)); break; }
       }
       if (!sumInsured) {
         for (const kisuy of allDescendants(heshbon, 'PirteiKisuiBeMutzar')) {
           const v = directChildText(kisuy, 'SCHUM-BITUACH') || directChildText(kisuy, 'SCHUM-BITUAH-LEMAVET');
           const f = parseFloat(v);
-          if (!isNaN(f) && f > 0) { sumInsured = String(Math.round(f)); break; }
+          if (Number.isFinite(f) && f > 0) { sumInsured = String(round2(f)); break; }
         }
       }
 
@@ -389,7 +407,7 @@ function extractInsurance(root, result) {
 }
 
 // מפרסר קובץ XML בודד ומוסיף את התוצאה ל-result המשותף (מזהה סוג לפי שם הקובץ)
-export function parseMaslakaXmlFile(xmlText, fileName, result) {
+export function parseMaslakaXmlFile(xmlText, fileName, result, options = {}) {
   const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
   if (doc.querySelector('parsererror')) throw new Error(`קובץ XML לא תקין: ${fileName}`);
 
@@ -397,16 +415,16 @@ export function parseMaslakaXmlFile(xmlText, fileName, result) {
   const root = doc.documentElement;
 
   if (upper.includes('PNN')) extractPension(root, result);
-  else if (upper.includes('KGM')) extractStudyFund(root, result);
+  else if (upper.includes('KGM')) extractStudyFund(root, result, options);
   else if (['ING', 'INK', 'INP', 'INM'].some(x => upper.includes(x))) extractInsurance(root, result);
   else throw new Error(`לא זוהה סוג הקובץ (לא PNN/KGM/ING/INK/INP/INM): ${fileName}`);
 }
 
 // מפרסר כמה קבצי XML של מסלקה בבת אחת -> { pension, study_fund, insurance, managers_insurance, client }
-export function parseMaslakaFiles(files) {
+export function parseMaslakaFiles(files, options = {}) {
   const result = { pension: [], study_fund: [], insurance: [], managers_insurance: [], client: null };
   for (const { text: xmlText, name } of files) {
-    parseMaslakaXmlFile(xmlText, name, result);
+    parseMaslakaXmlFile(xmlText, name, result, options);
   }
   return result;
 }

@@ -9,6 +9,8 @@ router.post('/send', authMiddleware, async (req, res) => {
   const { phone } = req.body;
   if (!phone) return res.status(400).json({ error: 'חסר מספר טלפון' });
   try {
+    const {rows}=await pool.query('SELECT phone FROM users WHERE id=$1',[req.user.id]);
+    if(!rows[0]?.phone||toE164(rows[0].phone)!==toE164(phone))return res.status(403).json({error:'המספר אינו תואם לחשבון'});
     await verifyService().verifications.create({ to: toE164(phone), channel: 'sms' });
     res.json({ sent: true });
   } catch (err) {
@@ -21,6 +23,8 @@ router.post('/check', authMiddleware, async (req, res) => {
   const { phone, code } = req.body;
   if (!phone || !code) return res.status(400).json({ error: 'חסרים שדות' });
   try {
+    const {rows}=await pool.query('SELECT phone FROM users WHERE id=$1',[req.user.id]);
+    if(!rows[0]?.phone||toE164(rows[0].phone)!==toE164(phone))return res.status(403).json({error:'המספר אינו תואם לחשבון'});
     const check = await verifyService().verificationChecks.create({ to: toE164(phone), code });
     if (check.status !== 'approved') return res.status(400).json({ error: 'קוד שגוי' });
     await pool.query('UPDATE users SET phone_verified=true WHERE id=$1', [req.user.id]);

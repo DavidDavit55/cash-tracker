@@ -130,3 +130,59 @@ CREATE TABLE IF NOT EXISTS raw_uploads (
   file_data BYTEA NOT NULL,
   uploaded_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Agent review is tied to the current version of the imported client data.
+ALTER TABLE client_financial_data ADD COLUMN IF NOT EXISTS review JSONB;
+ALTER TABLE client_financial_data ADD COLUMN IF NOT EXISTS review_draft JSONB;
+ALTER TABLE client_financial_data ADD COLUMN IF NOT EXISTS data_version UUID NOT NULL DEFAULT gen_random_uuid();
+
+-- Questionnaire answers are full labels, some longer than 50 characters.
+ALTER TABLE client_profiles
+  ALTER COLUMN risk_tolerance TYPE TEXT,
+  ALTER COLUMN investment_horizon TYPE TEXT,
+  ALTER COLUMN financial_knowledge TYPE TEXT,
+  ALTER COLUMN goals TYPE TEXT,
+  ALTER COLUMN life_stage TYPE TEXT;
+
+-- Budget imports: additive history only; existing ledger is unchanged.
+CREATE TABLE IF NOT EXISTS budget_imports (
+ id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+ user_id UUID NOT NULL REFERENCES users(id),
+ source TEXT NOT NULL,
+ filename TEXT NOT NULL,
+ file_hash TEXT NOT NULL,
+ status TEXT NOT NULL DEFAULT 'preview' CHECK (status IN ('preview','committed','undone')),
+ preview JSONB NOT NULL,
+ records JSONB NOT NULL DEFAULT '[]'::jsonb,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ committed_at TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS budget_imports_active_file ON budget_imports(user_id,file_hash) WHERE status='committed';
+-- Bank source records stay visible even when excluded from budget totals.
+CREATE TABLE IF NOT EXISTS budget_bank_movements (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ user_id UUID NOT NULL REFERENCES users(id),
+ source TEXT NOT NULL DEFAULT 'discount',
+ source_label TEXT NOT NULL,
+ raw_data JSONB NOT NULL DEFAULT '{}',
+ original_kind TEXT NOT NULL CHECK(original_kind IN ('expense','income')),
+ amount NUMERIC(10,2) NOT NULL CHECK(amount>0),
+ movement_date DATE NOT NULL,
+ label TEXT NOT NULL,
+ classification TEXT NOT NULL CHECK(classification IN ('expense','income','transfer','card_payment','cash_withdrawal','review')),
+ ledger_kind TEXT,
+ ledger_id UUID,
+ category_id UUID REFERENCES categories(id),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS budget_bank_owner_date ON budget_bank_movements(user_id,movement_date);
+CREATE TABLE IF NOT EXISTS budget_bank_rules (
+ user_id UUID NOT NULL REFERENCES users(id),
+ source TEXT NOT NULL,
+ label_key TEXT NOT NULL,
+ original_kind TEXT NOT NULL,
+ classification TEXT NOT NULL CHECK(classification IN ('expense','income','transfer','card_payment','cash_withdrawal')),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ PRIMARY KEY(user_id,source,label_key,original_kind)
+);

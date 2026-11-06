@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,16 +12,21 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.14",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/heb": "^1.0.0",
     "axios": "^1.16.1",
+    "daisyui": "^5.7.40",
     "date-fns": "^4.4.0",
     "jszip": "^3.10.2",
     "lucide-react": "^1.17.0",
+    "pdfjs-dist": "^6.3.289",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-dropzone": "^15.0.0",
     "react-router-dom": "^7.16.0",
     "recharts": "^3.8.1",
-    "xlsx": "^0.18.5"
+    "tesseract.js": "^7.0.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

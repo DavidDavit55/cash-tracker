@@ -10,3 +10,17 @@ dist/
 .playwright-mcp/
 .superpowers/
 .claude/
+
+# Local sandbox registration, signatures and message log
+frontend/.sandbox-state/
+
+# Isolated deployment staging
+.release/
+.staging-release/
+.staging-private/
+.calendar-ui-build/
+
+# Never commit Google credentials or local encryption material.
+client_secret*.json
+**/client_secret*.json
+backend/.gmail-private/

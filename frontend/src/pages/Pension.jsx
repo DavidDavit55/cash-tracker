@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { pensionFunds as mockPensionFunds, buildCalendlyLink, CTA_LABEL, userProfile } from '../mockData';
 import { fetchRealFundData } from '../lib/pensionNetApi';
 import { fetchCategoryAverage, fetchOwnLTM } from '../lib/categoryAverage';
@@ -104,8 +105,16 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
 
   const { warning, warningText } = statusWarning(f);
 
+  const StatBox = ({ label, value }) => (
+    <div style={{ border: '1px solid #eee7d6', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+      <div style={{ fontSize: '0.7rem', color: '#8a8067', marginBottom: '4px' }}>{label}</div>
+      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1a1a1a' }}>{value}</div>
+    </div>
+  );
+
   return (
     <ProductCard
+      sheet
       name={f.name}
       subtitle={f.provider}
       amount={fmt(f.balance)}
@@ -114,41 +123,60 @@ function PensionFundCard({ f, borderBottom, clientName, clientEmail, clientBirth
       warningText={warningText}
       details={
         <div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.8 }}>
-            {f.feeFromDeposit != null && <div>דמי ניהול מהפקדה: <b style={{ color: 'var(--text)' }}>{f.feeFromDeposit}%</b></div>}
-            {f.feeFromAccumulation != null && <div>דמי ניהול מצבירה: <b style={{ color: 'var(--text)' }}>{f.feeFromAccumulation}%</b></div>}
-            <div>מסלול השקעה: <b style={{ color: 'var(--text)' }}>{f.investmentTrack}</b></div>
-            {stockExposure != null && <div>חשיפה למניות: <b style={{ color: 'var(--text)' }}>{stockExposure}%</b></div>}
-            {!real && <div>תשואה 12 חודשים: <b style={{ color: 'var(--text)' }}>{f.return12m}%</b></div>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+            {f.feeFromDeposit != null && <StatBox label="דמי ניהול מהפקדה" value={`${f.feeFromDeposit}%`} />}
+            {f.feeFromAccumulation != null && <StatBox label="דמי ניהול מצבירה" value={`${f.feeFromAccumulation}%`} />}
+            <StatBox label="מסלול השקעה" value={f.investmentTrack} />
+            {stockExposure != null && <StatBox label="חשיפה למניות" value={`${stockExposure}%`} />}
           </div>
+          {!real && f.return12m != null && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '14px' }}>תשואה 12 חודשים: <b style={{ color: 'var(--text)' }}>{f.return12m}%</b></div>
+          )}
+
           {canCompare && !compareOpen && (
             <button
               onClick={handleToggleCompare}
-              style={{ background: '#f5f3ff', color: '#5b21b6', border: 'none', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px', width: '100%', textAlign: 'right', cursor: 'pointer', fontWeight: 600 }}
+              style={{ background: '#f5f3ff', color: '#5b21b6', border: 'none', borderRadius: '10px', padding: '12px 10px', fontSize: '0.85rem', marginBottom: '14px', width: '100%', textAlign: 'center', cursor: 'pointer', fontWeight: 600 }}
             >
               🔍 רוצה להבין איפה אתה ביחס לאחרים?
             </button>
           )}
           {canCompare && compareOpen && compareLoading && (
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>טוען השוואה...</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '14px' }}>טוען השוואה...</div>
           )}
           {canCompare && compareOpen && categoryAvg && ownLtm != null && (
-            <div style={{ background: ownLtm >= categoryAvg.average ? '#ecfdf5' : '#fef2f2', color: ownLtm >= categoryAvg.average ? '#065f46' : '#991b1b', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
-              📊 תשואת המסלול שלך ב-12 החודשים האחרונים: <b>{ownLtm.toFixed(2)}%</b>, לעומת ממוצע השוק ב{categoryLabel(categoryAvg.category)} ({categoryAvg.byCompany.length} חברות): <b>{categoryAvg.average.toFixed(2)}%</b>
-              {ownLtm >= categoryAvg.average ? ' — מעל הממוצע 🎉' : ' — מתחת לממוצע'}
+            <div style={{ border: '1px solid #eee7d6', borderRadius: '14px', padding: '14px', marginBottom: '14px' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px' }}>
+                תשואה 12 חודשים — אתה מול ממוצע השוק ב{categoryLabel(categoryAvg.category)}
+              </div>
+              <ResponsiveContainer width="100%" height={140} dir="ltr">
+                <BarChart data={[{ name: 'אתה', value: +ownLtm.toFixed(2) }, { name: 'ממוצע שוק', value: +categoryAvg.average.toFixed(2) }]} layout="vertical" margin={{ left: 10 }}>
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={v => `${v}%`} />
+                  <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={22}>
+                    <Cell fill={ownLtm >= categoryAvg.average ? '#00573F' : '#dc4c3f'} />
+                    <Cell fill="#C9A227" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ fontSize: '0.78rem', color: ownLtm >= categoryAvg.average ? '#065f46' : '#991b1b', marginTop: '4px', textAlign: 'center' }}>
+                {ownLtm >= categoryAvg.average ? 'מעל הממוצע 🎉' : 'מתחת לממוצע'} ({categoryAvg.byCompany.length} חברות שנבדקו)
+              </div>
             </div>
           )}
           {showTrackAdvisory && revealExtras && (
-            <div style={{ background: '#fffbeb', color: '#92400e', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px' }}>
+            <div style={{ background: '#fffbeb', color: '#92400e', borderRadius: '12px', padding: '12px', fontSize: '0.8rem', marginBottom: '14px' }}>
               בגיל {age} אתה במסלול ברירת מחדל תלוי-גיל עם {stockExposure}% חשיפה למניות — בגילך אפשר לרוב להעז יותר. כדאי לבדוק מסלול עם חשיפה גבוהה יותר.
             </div>
           )}
           {showAgencyDeal && revealExtras && (
-            <div style={{ background: '#eef2ff', color: '#3730a3', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', marginTop: '8px', lineHeight: 1.8 }}>
+            <div style={{ background: 'linear-gradient(135deg, #00573F, #003d2b)', color: '#fff', borderRadius: '14px', padding: '16px', fontSize: '0.85rem', lineHeight: 1.7 }}>
+              <div style={{ color: '#C9A227', fontWeight: 700, fontSize: '0.78rem', marginBottom: '6px' }}>💡 המלצה</div>
               {feeSavings != null && feeSavings > 0 ? (
-                <div>💰 דמי הניהול שאתה משלם היום גבוהים ביחס להפקדה ולצבירה שלך, עד הפרישה אפשר לחסוך לפחות <b>{fmt(feeSavings)}</b> יותר.</div>
+                <div>דמי הניהול שאתה משלם היום גבוהים ביחס להפקדה ולצבירה שלך. עד הפרישה אפשר לחסוך לפחות <b style={{ color: '#e8c765' }}>{fmt(feeSavings)}</b> יותר.</div>
               ) : (
-                <div>💰 יש לי הסכם מול {agencyDeal.company} שיכול להוזיל לך את דמי הניהול.</div>
+                <div>יש לי הסכם מול {agencyDeal.company} שיכול להוזיל לך את דמי הניהול.</div>
               )}
             </div>
           )}
@@ -208,7 +236,7 @@ export default function Pension() {
   const isPreview = useIsPreviewRoute();
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
 
-  if (maslakaLoading) return <div className="loading full">טוען...</div>;
+  if (maslakaLoading) return <div className="app-loading full" role="status">טוען...</div>;
   if (!hasRealData && !isPreview && !import.meta.env.DEV) {
     return <PendingDataScreen />;
   }

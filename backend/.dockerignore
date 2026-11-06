@@ -1,0 +1,8 @@
+# Release allowlist: never send credentials, reports, tests or customer files.
+**
+!package.json
+!package-lock.json
+!src/
+!src/**
+!Dockerfile
+!.dockerignore

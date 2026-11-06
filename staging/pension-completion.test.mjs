@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {recordSmsKit,pensionTransferReady} from '../.local-preview/workflow-process.js';
+import {finishPensionTransfer} from '../.local-preview/workflow-model.js';
+import {homeTasks} from '../.local-preview/workflow-home-model.js';
+const d={id:'d',productId:'p',action:'ניוד קרן פנסיה בהתאם לסיכום',sourceBalance:1000,fundsConfirmed:true,transfer:{inactive:true,verified:true,received:1000,document:{data:'test'}}};Object.assign(d,recordSmsKit(d));
+const c={id:'c',name:'Test',identity:'123456789',call:'done',products:[{id:'p',category:'פנסיה',balance:1000}],appointments:[],decisions:[d,{id:'other',action:'להשאיר ללא שינוי'}]};
+Object.assign(d,{target:'הראל',depositFee:1,balanceFee:0.1,track:'מניות'});
+assert.equal(!!pensionTransferReady(d),false);
+assert.ok(homeTasks([c]).some(t=>t.id==='c:d:pension-verify'));
+d.pensionVerification={checkedAt:new Date().toISOString(),values:{company:'הראל',depositFee:'1',balanceFee:'0.1',track:'מניות',received:'1000',date:'2026-09-01'}};
+assert.ok(pensionTransferReady(d));const closed=finishPensionTransfer(c,'d','וואטסאפ','הניוד הסתיים ואני זמין לכל שאלה');assert.ok(closed.decisions[0].completed);assert.ok(closed.products[0].archived);assert.equal(closed.products[1].balance,1000);assert.equal(closed.decisions[1],c.decisions[1]);assert.equal(closed.decisions[0].approved,undefined);assert.equal(closed.decisions[0].pensionCompletion.manual,true);
+assert.ok(homeTasks([c]).some(t=>t.id==='c:d:pension-close'));
+for(const patch of [{fundsConfirmed:false},{missing:true},{underwritingPending:true},{stopped:true},{transfer:{...d.transfer,document:null}},{action:'ניוד קרן השתלמות בהתאם לסיכום'}])assert.throws(()=>finishPensionTransfer({...c,decisions:[{...d,...patch}]},'d','טלפון','עודכן'));
+const gap={...d,transfer:{...d.transfer,inactive:false,requiresDeposit:true,salary:10000,employee:6,employer:6.5,severance:6,payrollSent:true,depositDate:'2026-09-29',depositActual:1700}};assert.equal(!!pensionTransferReady(gap),false);
+assert.throws(()=>finishPensionTransfer(closed,'d','טלפון','עודכן'));
+console.log('PASS: pension-only close, target product updated once, other products unchanged, open issues block, no fabricated company approval.');

@@ -1,0 +1,5 @@
+.wf-date-control{display:flex;align-items:center;gap:6px;min-width:0;width:100%}
+.wf-date-control>input[type=text]{flex:1;width:100%;min-width:0}
+.wf .wf-date-control>.wf-date-picker{width:40px;min-width:40px;padding:7px;flex:none;color:transparent;position:relative}
+.wf-date-picker::-webkit-datetime-edit{display:none}
+.wf-date-picker::-webkit-calendar-picker-indicator{margin:0;cursor:pointer;position:absolute;inset:0;width:auto;height:auto;background-position:center;background-size:18px}

@@ -1,0 +1,4 @@
+export default function BudgetAmount({value,onChange,positive=false,allowZero=false,label="סכום"}){
+ const move=delta=>onChange(String(Math.round(Math.max(positive?0:-99999999,(Number(value)||0)+delta)*100)/100));
+ return <span className="bw-budget-stepper bw-amount-arrows"><input required aria-label={label} type="number" inputMode="decimal" step="any" min={positive?(allowZero?'0':'0.01'):undefined} value={value} onChange={e=>onChange(e.target.value)} onKeyDown={e=>{if(['ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();move(e.key==='ArrowUp'?100:-100);}}}/><span className="bw-amount-controls"><button type="button" aria-label="הגדלת הסכום ב־100 שקלים" onClick={()=>move(100)}>▴</button><button type="button" aria-label="הפחתת הסכום ב־100 שקלים" onClick={()=>move(-100)}>▾</button></span></span>;
+}

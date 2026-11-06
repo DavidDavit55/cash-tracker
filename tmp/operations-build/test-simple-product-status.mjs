@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {simpleProductStatus as status} from './simple-product-status.js';
+const product={id:'life'},production={id:'prod',kind:'production',productId:'life',state:'done',verified:true};
+assert.equal(status({simpleProcesses:[production,{kind:'change',productId:'life',state:'new'}]},product).label,'הופק — ההפקה אומתה');
+assert.equal(status({simpleProcesses:[{...production,kind:'claim'}]},product),null);
+assert.equal(status({simpleProcesses:[{...production,productId:'health'}]},product),null);
+assert.equal(status({simpleProcesses:[{...production,state:'produced',verified:false}]},product).tone,'pending');
+assert.equal(status({simpleProcesses:[{...production,agreed:{effective:'2099-01-01'}}]},product,'2026-10-28').label,'הופק — תחילה עתידית');
+assert.equal(status({simpleProcesses:[{...production,state:'stopped'}]},product),null);
+console.log('6 status scenarios passed');

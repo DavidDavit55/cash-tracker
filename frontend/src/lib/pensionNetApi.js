@@ -5,6 +5,34 @@ const PENSION_NET_RESOURCE = '6d47d6b5-cb08-488b-b333-f1e717b1e1bd';
 const GEMEL_NET_RESOURCE = 'a30dcbea-a1d2-482c-ae29-8f781f5025fb';
 const MANAGERS_NET_RESOURCE = 'c6c62cc7-fe02-4b18-8f3e-813abfbb4647';
 
+// Explicit catalogue selection, separate from the existing best-match lookup.
+// Only public dataset identifiers are sent; no client data is included.
+export async function fetchFundOptions(fundType = 'pension', signal) {
+  const resource = fundType === 'pension' ? PENSION_NET_RESOURCE : GEMEL_NET_RESOURCE;
+  async function read(params) {
+    const query = new URLSearchParams({resource_id:resource, ...params});
+    const response = await fetch(`https://data.gov.il/api/3/action/datastore_search?${query}`, {signal});
+    if (!response.ok) throw new Error('מאגר המסלולים אינו זמין כרגע');
+    const data = await response.json();
+    if (!data.success || !Array.isArray(data.result?.records)) throw new Error('התקבלה תשובה לא תקינה ממאגר המסלולים');
+    return data.result;
+  }
+  const newest = await read({limit:'1',sort:'REPORT_PERIOD desc'});
+  const period = newest.records[0]?.REPORT_PERIOD;
+  if (!period) return [];
+  const records = [];
+  for (let offset=0; ; offset+=1000) {
+    const result = await read({filters:JSON.stringify({REPORT_PERIOD:period}),limit:'1000',offset:String(offset),sort:'FUND_ID asc'});
+    records.push(...result.records);
+    if (records.length >= result.total || !result.records.length) break;
+    if (offset >= 10000) throw new Error('רשימת המסלולים גדולה מהצפוי; יש לנסות שוב');
+  }
+  return [...new Map(records.map(r=>[String(r.FUND_ID), {
+    id:String(r.FUND_ID),name:r.FUND_NAME,manager:r.MANAGING_CORPORATION,
+    classification:r.FUND_CLASSIFICATION,reportPeriod:String(r.REPORT_PERIOD),
+  }])).values()].filter(r=>r.id && r.name && r.manager);
+}
+
 // דאטהסט ביטוחי המנהלים משתמש בשם שדה שונה ל-legal id של החברה המנהלת מאשר פנסיה/גמל.
 const LEGAL_ID_FIELD = {
   [PENSION_NET_RESOURCE]: 'MANAGING_CORPORATION_LEGAL_ID',

@@ -1,0 +1,68 @@
+@import '../frontend/src/styles/networth-brand.css';
+
+/* Deliberately last in the preview cascade; does not change production layout. */
+.wf {
+  --green: var(--nw-brand-green);
+  --gold: var(--nw-brand-gold);
+  --ink: var(--nw-ink);
+  --muted: var(--nw-muted);
+  --line: var(--nw-border);
+  color: var(--ink);
+  background: var(--nw-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+.wf .wf-demo{background:var(--nw-brand-green-dark);color:#fff;font-size:12px;padding:5px 16px;border-bottom:2px solid var(--gold)}
+.wf .wf-header{height:76px;padding:10px 28px;gap:24px;background:var(--nw-surface)}
+.wf .wf-header .sb-brand-logo{width:200px;height:48px}
+.wf .wf-header .sb-brand-logo img{width:205px;height:57px;object-fit:contain}
+.wf .wf-header>span:not(.sb-brand-logo){color:var(--muted)}
+.wf .wf-sidebar{top:112px;padding:18px 14px}
+.wf .wf-sidebar>button{min-height:46px;border-radius:8px;color:var(--ink);gap:12px}
+.wf .wf-sidebar>button.active{background:var(--green);color:white;border-inline-end:3px solid var(--gold)}
+.wf .wf-sidebar svg{width:19px;height:19px;stroke-width:1.7;flex-shrink:0}
+.wf .wf-sidebar-note{margin-top:28px;color:var(--muted)}
+.wf .wf-main{padding:20px 28px 44px}
+.wf .wf-toast:empty{display:none}
+.wf .wf-title{margin-bottom:20px}
+.wf .wf-title h1{font-size:28px;color:var(--green)}
+.wf .wf-title p{font-size:14px;color:var(--muted)}
+.wf .wf-panel{border-color:var(--line);border-radius:12px;padding:20px}
+.wf button{border-radius:7px}
+.wf button.secondary{color:var(--green);border-color:#b5c6bc}
+.wf button:hover:not(:disabled){filter:none}
+.wf button:not(.secondary):not(:disabled):hover{background:var(--nw-brand-green-dark);color:white}
+.wf button.secondary:not(:disabled):hover{background:var(--nw-tint);border-color:var(--green)}
+.wf button:focus-visible,.wf input:focus-visible,.wf select:focus-visible,.wf textarea:focus-visible,.wf summary:focus-visible{outline:2px solid var(--green);outline-offset:3px;box-shadow:0 0 0 5px var(--gold)}
+.wf .wf-user i,.wf .wf-avatar{background:var(--nw-tint);color:var(--green)}
+.wf .wf-tabs button[aria-current]{border-bottom-color:var(--gold);color:var(--green)}
+.wf .wf-next{background:var(--nw-tint);border-color:var(--line);border-inline-start-color:var(--gold)}
+.wf .wf-pill{background:var(--nw-tint);color:var(--green)}
+.wf .wf-pill.warn{background:#fff4d8;color:#785317}
+.wf .wf-product-group>h2{background:var(--nw-tint);color:var(--green)}
+.wf .nw-next-meeting{padding:18px 22px;background:var(--green);color:white;border:0;border-inline-start:3px solid var(--gold);border-radius:10px;margin-bottom:20px}
+.wf .nw-next-meeting h2{font-size:20px;margin:5px 0}
+.wf .nw-next-meeting small,.wf .nw-next-meeting p{color:#e3eee8}
+.wf .nw-next-meeting .secondary{background:white;border-color:white;color:var(--green)}
+.wf .nw-tasks .wf-section-head{margin-bottom:10px}
+.wf .nw-task{padding:14px 0;gap:15px;min-height:78px;border-color:var(--line)}
+.wf .nw-task strong{font-size:15px;color:var(--ink)}
+.wf .nw-task p,.wf .nw-task-date,.wf .nw-home-empty,.wf .nw-demo-start p,.wf .nw-scope{color:var(--muted)}
+.wf .nw-task-mark{background:var(--nw-tint);color:var(--green)}
+.wf .nw-task.urgent strong{color:#785317}
+.wf .nw-task.urgent .nw-task-mark{background:#fff0ce;color:#785317}
+.wf .nw-filters{gap:4px}
+.wf .nw-filters button{padding:7px 14px;min-height:40px}
+.wf .nw-filters button[aria-pressed=true]{background:var(--green);border-color:var(--green);color:white}
+.wf .nw-home-metrics section{border-color:var(--line);border-top:3px solid var(--gold);padding:16px 20px}
+.wf .nw-home-metrics strong{color:var(--green)}
+.wf .nw-scope{margin-top:16px}
+.wf .nw-home-empty{padding:14px 0}
+.wf .wf-list-row{padding:14px 0}
+@media(max-width:800px){.wf .wf-main{padding:18px 16px 32px}.wf .wf-header{height:auto;min-height:76px;flex-wrap:wrap}.wf .nw-task{gap:10px}.wf .nw-next-meeting{gap:12px}.wf .wf-title{align-items:flex-start}.wf .wf-title h1{font-size:25px}}
+@media(prefers-reduced-motion:reduce){.wf *{transition:none!important;scroll-behavior:auto!important}}
+/* Navigation keeps the established logo artwork, without button chrome. */
+.wf .wf-brand-home { background:transparent; border:0; padding:0; color:inherit; cursor:pointer; }
+.wf .wf-brand-home:focus-visible { outline:2px solid #aa9560; outline-offset:6px; }
+.wf-flow-list > li.done { padding-block:12px; }
+.wf-step-next { padding:20px; border:1px solid #dce4db; border-radius:12px; background:#f6f8f3; }
+.wf-operational-tasks { margin-top:20px; border-top:1px solid #dce4db; padding-top:16px; }

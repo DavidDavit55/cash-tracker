@@ -1,0 +1,14 @@
+/* NETWORTH identity: shared by the application and the local CRM preview.
+   Gold is an accent, not small body text on white. */
+:root {
+  --nw-brand-green: #00573f;
+  --nw-brand-green-dark: #003d2b;
+  --nw-brand-gold: #c9a227;
+  --nw-brand-gold-dark: #806315;
+  --nw-canvas: #f7f7f4;
+  --nw-surface: #ffffff;
+  --nw-ink: #182e27;
+  --nw-muted: #52635b;
+  --nw-border: #dce3dd;
+  --nw-tint: #edf4ef;
+}

@@ -1,0 +1,3 @@
+const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
+const files={'/':['client.html','text/html'],'/style.css':['style.css','text/css'],'/client.css':['client.css','text/css'],'/client.js':['client.js','text/javascript']};
+http.createServer((req,res)=>{const f=files[req.url];if(req.method!=='GET'||!f){res.writeHead(404);return res.end()}res.writeHead(200,{'Content-Type':f[1]+'; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; connect-src 'none'; frame-ancestors 'none'; form-action 'none'"});res.end(fs.readFileSync(path.join(__dirname,f[0])))}).listen(5237,'127.0.0.1',()=>console.log('Client UX demo: http://127.0.0.1:5237'));

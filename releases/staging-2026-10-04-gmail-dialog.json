@@ -1,0 +1,14 @@
+{
+  "environment": "staging",
+  "status": "success",
+  "deploymentId": "59656229-4598-4eaa-8dc6-49c0c4fbaf1c",
+  "previousDeploymentId": "bda0c2ad-e536-40d9-90ed-aca6f5a153c1",
+  "previousArtifact": ".release/staging-20261004-before-gmail-dialog",
+  "privateBackup": "2026-10-04T05-24-59-545Z",
+  "crmChunk": "StagingCrm-pcnNYKmi.js",
+  "verification": "live bundle hash and access controls passed; prior isolated browser and visual check passed",
+  "crmRevisionBefore": 913,
+  "crmRevisionAfter": 913,
+  "productionChanged": false,
+  "externalSends": 0
+}

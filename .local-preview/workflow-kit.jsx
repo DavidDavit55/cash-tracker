@@ -1,0 +1,7 @@
+import React from 'react';
+import {kitFor,actionKind} from './workflow-process.js';
+import Evidence from './workflow-evidence.jsx';
+export default function WorkflowKit({d,change}){
+ const save=(id,patch)=>change({kit:{...d.kit,[id]:{...d.kit?.[id],...patch}}},'עודכן מסמך בקיט המקומי');
+ return <section className="wf-kit"><h3>קיט מסמכים למהלך</h3><p>לכל מסמך קובץ ומעקב נפרד. לתרגול אפשר ליצור מסמך דמה מסומן; הוא אינו מסמך תקף.</p>{actionKind(d.action)==='replace'&&<label className="wf-field">נספח ביטול לפי המקרה<select value={d.cancelAnnex||''} disabled={d.signatureSent} onChange={e=>change({cancelAnnex:e.target.value},'נבחר נספח ביטול')}><option value="">בחר נספח</option><option value="א">נספח א׳</option><option value="ג">נספח ג׳</option></select></label>}{kitFor(d).map(doc=>{const item=d.kit?.[doc.id]||{};return <details className="wf-task-card" key={doc.id}><summary><b>{doc.name}</b><small>{item.sentAt?'נשלח בדמו':item.signedAt?'נחתם בדמו':item.ready&&item.file?'מולא ומוכן לחתימה':'דורש השלמה'}</small></summary><Evidence label={doc.name} file={item.file} disabled={d.signatureSent} onChange={file=>save(doc.id,{file,ready:false})}/><label className="wf-check"><input type="checkbox" checked={!!item.ready} disabled={d.signatureSent||!item.file?.data} onChange={e=>save(doc.id,{ready:e.target.checked})}/>בדקתי שהמסמך מולא ומוכן לחתימה</label>{doc.id==='cancel'&&<p>שליחת הביטול מתועדת בנפרד, רק לאחר בדיקת הפוליסה החדשה.</p>}</details>;})}</section>;
+}

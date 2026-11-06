@@ -1,3 +1,5 @@
+import { digitsOnly, phoneDigits } from '../lib/numericInput';
+import BrandLogo from '../sandbox/BrandLogo';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
@@ -42,15 +44,15 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <img src="/logo.png" alt="לוגו" style={{ height: '48px', objectFit: 'contain', marginBottom: '8px' }} />
-        <h1>NETWORTH</h1>
+        <div className="auth-brand"><BrandLogo /></div>
+        <h1>האזור האישי שלך</h1>
         <p className="auth-subtitle">התחבר לחשבון שלך</p>
 
         {stage === 'phone' && (
           <form onSubmit={sendCode}>
             <div className="form-group">
               <label>טלפון</label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} required placeholder="050-1234567" />
+              <input type="text" inputMode="numeric" pattern="0[0-9]{9}" autoComplete="tel-national" dir="ltr" value={phone} onChange={e => setPhone(phoneDigits(e.target.value))} required placeholder="050-1234567" />
             </div>
             {error && <div className="form-error">{error}</div>}
             <button type="submit" className="btn-primary" disabled={loading}>
@@ -63,7 +65,7 @@ export default function Login() {
           <form onSubmit={checkCode}>
             <div className="form-group">
               <label>קוד אימות נשלח ב-SMS ל-{phone}</label>
-              <input value={code} onChange={e => setCode(e.target.value)} required placeholder="123456" inputMode="numeric" />
+              <input type="text" pattern="[0-9]{6}" autoComplete="one-time-code" dir="ltr" value={code} onChange={e => setCode(digitsOnly(e.target.value, 6))} required placeholder="123456" inputMode="numeric" />
             </div>
             {error && <div className="form-error">{error}</div>}
             <button type="submit" className="btn-primary" disabled={loading}>

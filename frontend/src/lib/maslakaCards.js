@@ -34,18 +34,19 @@ export async function filesFromUploads(fileList) {
 // (task_64850134 - לפרסר את הכיסוי הביטוחי בנפרד) פשוט לא מציגים את הטקסט הזה כשם הקרן.
 const INSURANCE_RIDER_TEXT = /לנכות|לשארים|לשאירים/;
 
-function mapPensionItemToCard(item, kind) {
+function mapPensionItemToCard(item, kind, options = {}) {
   const tracks = item.tracks || [];
   const mainTrack = tracks.length ? tracks.reduce((a, b) => (b.pct || 0) > (a.pct || 0) ? b : a) : null;
   const balance = parseFloat(kind === 'pension' ? item.savings : item.tzvira);
   const planName = item.plan && !INSURANCE_RIDER_TEXT.test(item.plan) ? item.plan : null;
   return {
     id: item.policyNum || `${kind}-${item.plan}-${item.company}`,
+    pensionIdentity: kind === 'pension' ? JSON.stringify([item.pensionType || '', item.plan || '']) : undefined,
     name: planName || item.company,
     provider: item.company,
     type: kind === 'pension' ? 'pension' : 'gemel',
     productType: item.productType || null,
-    balance: isNaN(balance) ? 0 : balance,
+    balance: isNaN(balance) ? (options.includeEmptyAccounts ? null : 0) : balance,
     feeFromDeposit: item.dmeiNihulHafkada ? parseFloat(item.dmeiNihulHafkada) : null,
     feeFromAccumulation: item.dmeiNihulTzvira ? parseFloat(item.dmeiNihulTzvira) : null,
     monthlyDeposit: item.monthlyDeposit ? parseFloat(item.monthlyDeposit) : null,
@@ -55,6 +56,8 @@ function mapPensionItemToCard(item, kind) {
     isDefaultTrack: /\d+\s*(שנה|ומטה|ומעלה)|תלוי גיל/.test(mainTrack?.name || ''),
     return12m: item.netReturn ? parseFloat(item.netReturn) : null,
     status: item.status || null,
+    hasLien: item.hasLien ?? null,
+    hasPledge: item.hasPledge ?? null,
   };
 }
 
@@ -91,10 +94,12 @@ function mapInsuranceItemToCard(entry, isManagers) {
     balance: isManagers && entry.tzvira ? parseFloat(entry.tzvira) : null,
     coverage,
     status: entry.status || null,
+    hasLien: entry.hasLien ?? null,
+    hasPledge: entry.hasPledge ?? null,
     warning: isTempRisk ? 'yellow' : null,
     warningText: isTempRisk ? 'ריסק זמני' : null,
     pledgedTo: entry.pledgedTo || null,
-    coverageItems: coverageItems.length ? coverageItems : ['אין פרטי כיסוי נוספים בקובץ המסלקה'],
+    coverageItems,
     feeFromDeposit: isManagers && entry.dmeiNihulHafkada ? parseFloat(entry.dmeiNihulHafkada) : null,
     feeFromAccumulation: isManagers && entry.dmeiNihulTzvira ? parseFloat(entry.dmeiNihulTzvira) : null,
     investmentTrack: isManagers ? (entry.track || '') : null,
@@ -104,11 +109,11 @@ function mapInsuranceItemToCard(entry, isManagers) {
 }
 
 // files: [{name, text}] קבצי XML גולמיים (אחרי חילוץ מה-ZIP) -> כרטיסי פנסיה/ביטוח + פרטי לקוח
-export function processMaslakaFiles(files) {
-  const result = parseMaslakaFiles(files);
+export function processMaslakaFiles(files, options = {}) {
+  const result = parseMaslakaFiles(files, options);
   const pensionCards = [
-    ...result.pension.map(p => mapPensionItemToCard(p, 'pension')),
-    ...result.study_fund.map(s => mapPensionItemToCard(s, 'study_fund')),
+    ...result.pension.map(p => mapPensionItemToCard(p, 'pension', options)),
+    ...result.study_fund.map(s => mapPensionItemToCard(s, 'study_fund', options)),
   ];
   const insuranceCards = [
     ...result.insurance.map(e => mapInsuranceItemToCard(e, false)),

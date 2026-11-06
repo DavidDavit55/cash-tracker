@@ -1,0 +1,12 @@
+const fs=require('node:fs');
+function edit(file,from,to){let s=fs.readFileSync(file,'utf8');if(!s.includes(from))throw Error('Missing target '+file);fs.writeFileSync(file,s.replace(from,to));}
+edit('.local-preview/workflow-process.js','if(!data.identityAttached)','if(d.productCategory!==\'בריאות\'&&!data.identityAttached)');
+edit('.local-preview/workflow-process.js','identityAttached:true,cancelAnnex','identityAttached:!!data.identityAttached,cancelAnnex');
+edit('.local-preview/workflow-operation.jsx','<label className="wf-check"><TypedDate type="checkbox" name="identityAttached" required/>צילום ת״ז צורף לטפסים</label>','{d.productCategory!==\'בריאות\'&&<label className="wf-check"><TypedDate type="checkbox" name="identityAttached" required/>צילום ת״ז צורף לטפסים</label>}');
+edit('.local-preview/production-verification.jsx','<form onSubmit={e=>{e.preventDefault();try{change(recordProductionVerification','<form noValidate onSubmit={e=>{e.preventDefault();try{change(recordProductionVerification');
+edit('.local-preview/production-verification.jsx','<button disabled={!!missing.length||!fields.every(f=>productionFieldMatches(f,values[f.key]))||!source||!reference.trim()||!(d.policyDocument?.data||d.transfer?.document?.data)}>','<button>');
+edit('.local-preview/production-verification.jsx',"'תואם / תקין':'לא תואם — יש לברר'","(f.tolerance?'תקין — פער של עד 2 ₪ מותר':'תואם / תקין'):'לא תואם — יש לברר'");
+edit('.local-preview/workflow-operation.jsx','<button disabled={!readyToClose(d)} onClick={finish}>','<button onClick={()=>{if(!readyToClose(d)){window.alert("לא ניתן להמשיך: יש לשמור בדיקת הפקה תקפה, לוודא אישור חברה ולסגור בירורים פתוחים. בשמירת בדיקת ההפקה יוצגו השדות החסרים או שאינם תואמים.");return;}finish();}}>');
+edit('.local-preview/workflow-followup.jsx','<button disabled={done!==list.length} onClick={onClose}>','<button onClick={()=>{if(done!==list.length){setError("לא ניתן לסיים. נותרו: "+list.filter(t=>!followupTaskDone(d,t.key)).map(t=>t.title).join("; "));return;}try{onClose();}catch(e){setError(e.message);}}}>');
+edit('.local-preview/workflow-followup.jsx',"import TypedDate from './typed-date.jsx';","import TypedDate from './typed-date.jsx';\nimport CompletionMessage from './completion-message.jsx';");
+edit('.local-preview/workflow-followup.jsx',"{t.key==='call'&&<label", "{t.key==='call'&&!financial&&<CompletionMessage d={d} change={change}/>}\n {t.key==='call'&&<label");

@@ -1,0 +1,52 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {PGlite} from '../.release/budget-test-runtime/node_modules/@electric-sql/pglite/dist/index.js';
+import {createMail,mailSchema,MAIL_SCOPE,RECIPIENT} from './mail.mjs';
+import {createCalendar,schema,oauthPurposeSchema} from './calendar.mjs';
+import {meetingDateFor,reportEmail} from '../.local-preview/meeting-context.js';
+import {payrollMessage} from './payroll-mail.mjs';
+import {deliveryMessage} from './delivery-mail.mjs';
+import {eventData} from './calendar.mjs';
+test('annual service meetings are valid Calendar events',()=>{const {body}=eventData('owner',{id:'c',name:'Test'},{id:'annual',annualService:true,title:'פגישת שירות',when:'2027-09-29T13:00'});assert.ok(body.summary.includes('פגישת שירות'));assert.equal(body.start.dateTime,'2027-09-29T10:00:00.000Z');});
+const owner='11111111-1111-4111-8111-111111111111';
+const env={APP_ENV:'staging',PILOT_CALENDAR_ENABLED:'true',PILOT_MAIL_CLIENT_ID:'test',PILOT_MAIL_CLIENT_SECRET:'test',PILOT_MAIL_ENCRYPTION_KEY:Buffer.alloc(32,7).toString('base64'),PILOT_MAIL_REDIRECT_URI:'https://networth-staging-staging.up.railway.app/api/staging/mail/callback'};
+const response=()=>({statusCode:200,cookies:{},status(n){this.statusCode=n;return this;},json(v){this.body=v;return this;},set(){return this;},cookie(k,v){this.cookies[k]=v;},clearCookie(){},redirect(v){this.url=v;}});
+test('meeting date uses scheduled recommendations; reported email never inferred',()=>{
+ assert.equal(meetingDateFor({appointments:[{type:'פגישת המלצות',when:'2026-10-01T13:00'}]}),'2026-10-01');
+ assert.equal(meetingDateFor({meetingDate:'2026-10-02',appointments:[]}), '2026-10-02');
+ assert.ok(reportEmail({email:'unverified@example.com'}).startsWith('לא נמצאה'));
+ assert.equal(reportEmail({reports:[{source:'maslaka',customerEmails:['actual@example.com']}]}),'actual@example.com');
+});
+const payrollClient={id:'p',name:'Test Client',identity:'123456789',products:[{id:'prod',category:'פנסיה',company:'Test'}],decisions:[{id:'d',productId:'prod',action:'ניוד קרן פנסיה בהתאם לסיכום',sent:true,transfer:{inactive:false}}]};
+const payrollDraft={payrollEmail:'payroll@example.com',salaryMonth:'2026-10',annex:{name:'annex.pdf',data:'data:application/pdf;base64,JVBERi0xLjQ='},cubes:{name:'cubes.txt',data:'data:text/plain;charset=utf-8,'+encodeURIComponent('מסמך דמה'),simulated:true}};
+test('payroll MIME locks recipient, includes both attachments and masks ID in subject',()=>{
+ const m=payrollMessage(payrollClient,{decisionId:'d',draft:payrollDraft}),raw=Buffer.from(m.raw,'base64url').toString();
+ assert.ok(raw.includes('To: '+RECIPIENT+'\r\n'));assert.equal((raw.match(/Content-Disposition: attachment/g)||[]).length,2);assert.ok(raw.includes('JVBERi0xLjQ='));assert.equal(m.subject,'עדכון הפקדות פנסיה Test Client [בדיקת סטייגינג]');assert.ok(!m.subject.includes('123456789'));
+ assert.throws(()=>payrollMessage(payrollClient,{decisionId:'d',draft:{...payrollDraft,annex:null}}));
+ assert.throws(()=>payrollMessage({...payrollClient,decisions:[]},{decisionId:'d',draft:payrollDraft}));
+});
+test('business-only OAuth, server recipient lock, stale summary, duplicate and ambiguous send protection',async()=>{
+ const db=new PGlite();await db.exec(`CREATE TABLE users(id uuid PRIMARY KEY);CREATE TABLE staging_crm(owner_id uuid PRIMARY KEY,state jsonb,revision integer);${schema};${oauthPurposeSchema};${mailSchema}`);await db.query('INSERT INTO users VALUES($1)',[owner]);
+ const pool={query:(s,a)=>db.query(s,a)};let wrong=true,sends=0,lose=false;
+ const request=async(url,o={})=>{const json=d=>new Response(JSON.stringify(d));if(url.includes('/token'))return json({access_token:'a',refresh_token:'r',scope:MAIL_SCOPE});if(url.endsWith('/userinfo'))return json({email:wrong?'daviddavit55@gmail.com':'david@davit-fin.co.il',verified_email:true});
+ assert.equal(url,'https://gmail.googleapis.com/gmail/v1/users/me/messages/send');sends++;const raw=Buffer.from(JSON.parse(o.body).raw,'base64url').toString();assert.ok(raw.includes('To: '+RECIPIENT+'\r\n'));assert.ok(!/\r\n(?:Cc|Bcc):/i.test(raw));assert.ok(!raw.includes('victim@example.com'));if(lose)throw Error('timeout');return json({id:'m1'});};
+ const cal=createCalendar({pool,env,request}),mail=createMail({pool,env,request}),req={user:{id:owner},body:{clientId:'c',summary:'Summary',revision:1,to:'victim@example.com'}};
+ async function connect(){const r=response();await cal.mailConnect(req,r);const url=new URL(r.body.url);assert.ok(url.searchParams.get('scope').includes(MAIL_SCOPE));const cb=response();await cal.callback({query:{state:url.searchParams.get('state'),code:'x'},headers:{cookie:'nw_calendar_oauth='+r.cookies.nw_calendar_oauth}},cb);return cb;}
+ assert.ok((await connect()).url.endsWith('failed'));wrong=false;assert.ok((await connect()).url.endsWith('mail=connected'));assert.equal((await db.query('SELECT * FROM staging_calendar_connections')).rows.length,0);
+ await db.query('INSERT INTO staging_crm VALUES($1,$2,1)',[owner,JSON.stringify({clients:[{id:'c',meetingDone:true,summary:'Summary'}]})]);
+ const stale=response();await mail.send({...req,body:{...req.body,summary:'changed'}},stale);assert.equal(stale.statusCode,400);assert.equal(sends,0);
+ const sent=response();await mail.send(req,sent);assert.equal(sent.body.sent,true);await mail.send(req,response());assert.equal(sends,1);
+ await db.query('UPDATE staging_crm SET state=$1',[JSON.stringify({clients:[{id:'c',meetingDone:true,summary:'Second'}]})]);
+ lose=true;const next={...req,body:{...req.body,summary:'Second'}};await mail.send(next,response());const retry=response();await mail.send(next,retry);assert.equal(retry.statusCode,409);assert.equal(sends,2);
+ lose=false;await db.query('UPDATE staging_crm SET state=$1',[JSON.stringify({clients:[payrollClient]})]);
+ const payrollReq={...req,path:'/api/staging/mail/payroll',body:{clientId:'p',decisionId:'d',draft:payrollDraft,revision:1,to:'victim@example.com'}},payrollResult=response();
+ await mail.send(payrollReq,payrollResult);assert.equal(payrollResult.body.sent,true);assert.match(payrollResult.body.payrollSentAt,/^\d{4}-\d{2}-\d{2}$/);await mail.send(payrollReq,response());assert.equal(sends,3);
+ const history=response();await mail.history({...req,query:{clientId:'p'}},history);assert.equal(history.body.rows.length,1);assert.equal(history.body.rows[0].intended,'payroll@example.com');
+ const raw=(await db.query("SELECT raw FROM staging_mail_sends WHERE client_id='p'")).rows[0].raw;assert.ok(Buffer.from(raw,'base64url').toString().includes('Content-Disposition: attachment'));
+ const deliveryClient={...payrollClient,email:'client@example.com',decisions:[{...payrollClient.decisions[0],produced:true,fundsConfirmed:true,tasks:{verify:{done:true}},transfer:{document:payrollDraft.annex}}]};
+ const dm=deliveryMessage(deliveryClient,{decisionId:'d'}),decoded=Buffer.from(dm.raw,'base64url').toString();assert.equal((decoded.match(/Content-Disposition: attachment/g)||[]).length,1);
+ assert.throws(()=>deliveryMessage({...deliveryClient,decisions:[{...deliveryClient.decisions[0],tasks:{}}]},{decisionId:'d'}));
+ await db.query('UPDATE staging_crm SET state=$1',[JSON.stringify({clients:[deliveryClient]})]);
+ const dr={...payrollReq,path:'/api/staging/mail/delivery',body:{clientId:'p',decisionId:'d',revision:1}},delivered=response();await mail.send(dr,delivered);assert.equal(delivered.body.sent,true);await mail.send(dr,response());assert.equal(sends,4);
+ await db.close();
+});

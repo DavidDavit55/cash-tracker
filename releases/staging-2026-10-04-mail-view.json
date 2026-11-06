@@ -1,0 +1,14 @@
+{
+  "environment": "staging",
+  "status": "success",
+  "deploymentId": "86d54189-15fa-4ce8-8aeb-f3432ffd00a9",
+  "previousDeploymentId": "9dc7924e-4488-46a8-9cb3-90244317ae21",
+  "previousArtifact": ".release/staging-20261004-before-mail-view",
+  "privateBackup": "2026-10-04T05-06-29-329Z",
+  "crmChunk": "StagingCrm-DmOv3FsP.js",
+  "checks": ["2 unit tests", "isolated browser viewer and Escape", "visual screenshot reviewed", "live bundle hash", "live received email read", "401 and 403 access controls"],
+  "crmRevisionBefore": 909,
+  "crmRevisionAfter": 909,
+  "productionChanged": false,
+  "externalSends": 0
+}

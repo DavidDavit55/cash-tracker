@@ -1,0 +1,15 @@
+{
+  "environment": "staging",
+  "status": "success",
+  "deploymentId": "387c2b72-1af4-4e55-b862-1f2fa6e2be36",
+  "previousDeploymentId": "5c64567d-6fc5-4b88-b7eb-5e4882959685",
+  "previousArtifact": ".release/staging-20261004-before-shared-payroll",
+  "privateBackup": "2026-10-04T06-09-57-343Z",
+  "crmChunk": "StagingCrm-CLFcXOBB.js",
+  "verification": "draft-sharing unit test, local build, live bundle hash and access controls passed",
+  "scope": "Explicit same-employer draft sharing only; no delivery or deposit propagation",
+  "crmRevisionBefore": 926,
+  "crmRevisionAfter": 926,
+  "productionChanged": false,
+  "externalSends": 0
+}

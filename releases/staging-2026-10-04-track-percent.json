@@ -1,0 +1,16 @@
+{
+  "environment": "staging",
+  "status": "success-verified",
+  "deploymentId": "b99e1081-1a01-4d8b-a805-75fec5413a4a",
+  "previousDeploymentId": "bdb2641b-dc9f-434a-9c1f-315f223d34e2",
+  "previousArtifact": ".release/staging-20261004-before-track-percent-artifact",
+  "sourceSnapshot": "staging-20261004-before-track-percent",
+  "snapshotNote": "Source already contains the tested change; previous deployed package preserved separately.",
+  "crmChunk": "StagingCrm-BrTg3992.js",
+  "tests": {"unit": 17, "isolatedBrowserRegressionScenarios": 4},
+  "postRelease": {"bundleSha256Match": true, "health": "passed", "accessControls": "passed", "crmRevision": 885},
+  "change": "Agent track-change verification asks percentages per named track, not fund numbers; matches agreed allocation and total 100 percent. Historical evidence retained.",
+  "productionChanged": false,
+  "crmWrites": 0,
+  "externalEmailsSent": 0
+}

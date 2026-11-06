@@ -44,6 +44,8 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const { category_id, amount, month, year } = req.body;
+  if(amount==null||amount===''||!Number.isFinite(Number(amount))||Number(amount)<0||Number(amount)>=100000000||!Number.isInteger(Number(month))||Number(month)<1||Number(month)>12||!Number.isInteger(Number(year))||Number(year)<1900||Number(year)>2200)return res.status(400).json({error:'סכום או חודש לא תקינים'});
+  if(!(await pool.query('SELECT id FROM categories WHERE id=$1 AND user_id=$2',[category_id,req.user.id])).rowCount)return res.status(400).json({error:'קטגוריה לא שייכת לחשבון'});
   const { rows } = await pool.query(
     `INSERT INTO budgets (user_id, category_id, amount, month, year)
      VALUES ($1,$2,$3,$4,$5)
@@ -56,6 +58,7 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const { amount } = req.body;
+  if(amount==null||amount===''||!Number.isFinite(Number(amount))||Number(amount)<0||Number(amount)>=100000000)return res.status(400).json({error:'סכום לא תקין'});
   const { rows } = await pool.query(
     'UPDATE budgets SET amount=$1 WHERE id=$2 AND user_id=$3 RETURNING *',
     [amount, req.params.id, req.user.id]

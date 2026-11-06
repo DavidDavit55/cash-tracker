@@ -1,0 +1,8 @@
+{
+  "product": "NETWORTH",
+  "version": "1.0.0",
+  "status": "preparing",
+  "releasedAt": null,
+  "record": "releases/1.0.0.json",
+  "policy": "docs/release-management.md"
+}

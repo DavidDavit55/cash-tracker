@@ -5,12 +5,14 @@ import fs from 'fs';
 import Anthropic from '@anthropic-ai/sdk';
 import pool from '../db/pool.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { receiptHandler } from '../services/privateReceipt.js';
 
 const router = Router();
 router.use(authMiddleware);
 
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+router.get('/:id/receipt',receiptHandler(pool,uploadsDir));
 
 const storage = multer.diskStorage({
   destination: uploadsDir,
@@ -21,9 +23,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 async function extractReceiptData(imagePath) {
+  if (process.env.APP_ENV === 'staging') throw new Error('OCR disabled in staging');
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const imageBuffer = fs.readFileSync(imagePath);
   const base64 = imageBuffer.toString('base64');
   const ext = path.extname(imagePath).slice(1).toLowerCase();
@@ -61,7 +63,8 @@ async function extractReceiptData(imagePath) {
 }
 
 // POST /expenses/scan — OCR only, no save
-router.post('/scan', upload.single('receipt'), async (req, res) => {
+export function registerReceiptScan(target){
+target.post('/scan', upload.single('receipt'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'קובץ חסר' });
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -77,6 +80,9 @@ router.post('/scan', upload.single('receipt'), async (req, res) => {
     res.status(500).json({ error: 'שגיאה בסריקה' });
   }
 });
+
+}
+registerReceiptScan(router);
 
 // GET /expenses/potential-duplicates
 router.get('/potential-duplicates', async (req, res) => {
@@ -241,6 +247,7 @@ router.put('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const { category_id } = req.body;
   try {
+    if(category_id&&!(await pool.query('SELECT id FROM categories WHERE id=$1 AND user_id=$2',[category_id,req.user.id])).rowCount)return res.status(400).json({error:'קטגוריה לא שייכת לחשבון'});
     const { rows } = await pool.query(
       `UPDATE expenses SET category_id=$1, updated_at=NOW() WHERE id=$2 AND user_id=$3 RETURNING *`,
       [category_id, req.params.id, req.user.id]

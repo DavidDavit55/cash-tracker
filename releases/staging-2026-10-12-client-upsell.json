@@ -1,0 +1,26 @@
+{
+  "environment": "staging",
+  "scope": "One client-level upsell task after all agreed treatment completes, due on the completion day in Asia/Jerusalem",
+  "deployment": "be1adc8b-8ce2-4111-b0ca-749e1445aa8e",
+  "status": "SUCCESS",
+  "artifact": ".release/staging-upsell-20261012",
+  "previousArtifact": ".release/staging-admin-identity-fix-20261011",
+  "previousDeployment": "ecbcbc5b-5f17-4a54-9378-86bc1444aa48",
+  "frontendChunk": "StagingCrm-4VTRzt9_.js",
+  "verification": {
+    "testsPassed": 22,
+    "frontendBuild": "passed",
+    "deployedBundleMatchesCandidate": true,
+    "unauthenticatedAndClientAccessChecks": "passed",
+    "browser": "staging admin dashboard loads; both real clients still have pending original treatment and therefore no premature upsell task",
+    "googleTasks": "shared projection and idempotent sync tested with mocked Google; real connection still needs attention and external sync is not claimed verified",
+    "upsellCompletion": "logic and JSON persistence roundtrip tested; no real customer marked completed for testing"
+  },
+  "backupBefore": ".staging-private/backups/2026-10-12T06-35-18-012Z",
+  "backupAfter": ".staging-private/backups/2026-10-12T06-38-15-610Z",
+  "crmRevisionBeforeAndAfter": 933,
+  "crmAnd16FilesUnchanged": true,
+  "productionChanged": false,
+  "crmWrites": 0,
+  "externalSends": 0
+}

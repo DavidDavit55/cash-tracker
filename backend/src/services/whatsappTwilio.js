@@ -8,22 +8,24 @@ function client() {
   return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
 
-async function sendTemplate(to, contentSidEnvVar, contentVariables) {
+async function sendTemplate(to, contentSidEnvVar, contentVariables, approvedOverride) {
   const from = process.env.TWILIO_WHATSAPP_NUMBER;
-  const contentSid = process.env[contentSidEnvVar];
+  const contentSid = approvedOverride || process.env[contentSidEnvVar];
   if (!from || !contentSid || !to) {
     console.log(`⚠️  WhatsApp (${contentSidEnvVar}): חסר ${!from ? 'TWILIO_WHATSAPP_NUMBER' : !contentSid ? contentSidEnvVar : 'יעד'} - לא נשלח`);
-    return;
+    return { status: "skipped", reason: !to ? "missing_phone" : "missing_configuration" };
   }
   try {
-    await client().messages.create({
+    const message = await client().messages.create({
       from: `whatsapp:${toE164(from)}`,
       to: `whatsapp:${toE164(to)}`,
       contentSid,
       contentVariables: JSON.stringify(contentVariables),
     });
+    return { status: "accepted", messageId: message?.sid };
   } catch (err) {
     console.error(`WhatsApp send failed (${contentSidEnvVar}):`, err.message);
+    return { status: "failed" };
   }
 }
 
@@ -38,6 +40,16 @@ export function notifyClientWelcome({ phone, name }) {
   return sendTemplate(phone, 'TWILIO_CONTENT_SID_WELCOME', { 1: name || '' });
 }
 
-export function notifyClientNewRecommendations({ phone, name }) {
-  return sendTemplate(phone, 'TWILIO_CONTENT_SID_RECOMMENDATIONS', { 1: name || '' });
+export async function notifyClientNewRecommendations({ phone, name }) {
+  const candidate = process.env.TWILIO_CONTENT_SID_RECOMMENDATIONS_WITH_LINK;
+  let approvedSid;
+  if (candidate && phone && process.env.TWILIO_WHATSAPP_NUMBER) {
+    try {
+      const approval = await client().content.v1.contents(candidate).approvalFetch().fetch();
+      if (approval.whatsapp?.status === 'approved') approvedSid = candidate;
+    } catch {
+      console.warn('WhatsApp template approval check unavailable; using existing approved template');
+    }
+  }
+  return sendTemplate(phone, 'TWILIO_CONTENT_SID_RECOMMENDATIONS', { 1: name || '' }, approvedSid);
 }

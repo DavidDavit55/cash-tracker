@@ -1,0 +1,105 @@
+/* One quiet toolbar; overlays never push the CRM or its navigation down. */
+.staging-crm-view{--staging-green:#244c40;--staging-gold:#aa925b;color:#263f37;font-family:Arial,sans-serif}
+.staging-toolbar{display:flex;align-items:center;gap:18px;min-height:42px;padding:4px 28px;background:#f5f7f3;border-bottom:1px solid #dfe6de;font-size:12px;position:relative;z-index:20}
+.staging-toolbar>span{color:#65766e;margin-inline-start:auto}
+.staging-environment>summary{cursor:pointer;color:#71613b;list-style:none}
+.staging-environment>summary:before{content:'●';font-size:8px;margin-inline-end:7px;color:var(--staging-gold)}
+.staging-environment nav{position:absolute;top:100%;right:20px;display:grid;gap:12px;min-width:180px;background:white;padding:18px;border:1px solid #dfe6de;border-radius:10px;box-shadow:0 8px 24px #19372b15}
+.staging-environment a{color:var(--staging-green)}
+.staging-calendar-trigger{font:inherit;cursor:pointer;color:var(--staging-green);background:transparent;border:1px solid #d3ddd5;border-radius:7px;padding:5px 10px;min-height:32px;white-space:nowrap}
+.staging-calendar-trigger span{font-size:10px;margin-inline-end:5px}.staging-calendar-trigger.needs-attention{color:#935723;border-color:#c3a477}
+.staging-calendar-dialog{width:650px;max-width:calc(100vw - 32px);max-height:85dvh;overflow:auto;border:1px solid #dfe6de;border-radius:16px;padding:24px;color:#263f37;background:white;font:15px/1.7 Arial,sans-serif;box-shadow:0 20px 80px #122f3230}
+.staging-calendar-dialog{margin:auto}
+.staging-calendar-dialog::backdrop{background:#152c2360;backdrop-filter:blur(2px)}
+.staging-calendar-dialog header{display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #dfe6de;padding-bottom:12px;margin-bottom:18px}
+.staging-calendar-dialog h2{margin:0;font-size:21px}.staging-calendar-dialog button{font:inherit;cursor:pointer;border:1px solid #c7d3cb;border-radius:8px;padding:8px 12px;background:#edf3ee;color:var(--staging-green)}
+.staging-calendar-dialog button:disabled{opacity:.5;cursor:wait}.staging-calendar-dialog header button{font-size:24px;padding:0 12px}.staging-calendar-dialog a{color:var(--staging-green)}
+.staging-calendar-dialog summary{cursor:pointer;font-weight:600}.staging-calendar-dialog p{font-size:14px}.staging-calendar-dialog [role=alert],.staging-save-error{color:#923e26}
+.staging-save-error{padding:12px 28px;background:#fff2e9;margin:0}
+.staging-crm-view .wf{position:relative}.staging-crm-view .wf>.wf-demo,.staging-crm-view .wf .wf-sidebar-note{display:none}
+@media(min-width:901px){.staging-crm-view .wf .wf-sidebar{top:76px}}
+.staging-crm-view button:focus-visible,.staging-crm-view summary:focus-visible{outline:2px solid var(--staging-gold);outline-offset:3px}
+@media(max-width:600px){.staging-toolbar{padding:5px 12px;gap:8px;font-size:11px;flex-wrap:wrap}.staging-toolbar>span{flex:1}.staging-calendar-dialog{padding:18px}}
+
+/* Compact CRM workspace only: retain readable text and native browser zoom. */
+.staging-crm-view .wf .wf-summary-preview{padding:0;margin-block:10px;border:1px solid #dfe6de;border-radius:8px}
+.staging-crm-view .wf .wf-summary-preview>summary{display:list-item;min-height:0;margin:0;padding:8px 12px;line-height:20px;cursor:pointer}
+.staging-crm-view .wf .wf-summary-preview>summary:focus-visible{outline:2px solid var(--staging-gold);outline-offset:-2px}
+.staging-crm-view .wf .wf-summary-preview>pre{margin:0;padding:12px;border-top:1px solid #dfe6de;white-space:pre-wrap;overflow-wrap:anywhere}
+/* Basic health is one accordion, not a nested workspace inside a second card. */
+.staging-crm-view .wf details.wf-panel:has(>.wf-basic-health){padding:0;overflow:hidden}
+.staging-crm-view .wf details.wf-panel:has(>.wf-basic-health)>summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:11px 16px;line-height:1.5;list-style:none}
+.staging-crm-view .wf details.wf-panel:has(>.wf-basic-health)>summary::before{content:'‹';font-size:20px;line-height:1}
+.staging-crm-view .wf details.wf-panel[open]:has(>.wf-basic-health)>summary::before{content:'⌄'}
+.staging-crm-view .wf details.wf-panel:has(>.wf-basic-health)>summary:focus-visible{outline:2px solid var(--staging-gold);outline-offset:-3px}
+.staging-crm-view .wf-basic-health .pr-product{margin:0;border:0;border-radius:0}
+.staging-crm-view .wf-basic-health .pr-product>summary{display:none}
+.staging-crm-view .wf-basic-health .pr-body{padding:0 16px 8px}
+.staging-crm-view .wf-basic-health .pr-hint{margin:0;padding:10px 0;font-size:13px}
+.staging-crm-view .wf-basic-health .pr-parameter{grid-template-columns:minmax(260px,1fr) minmax(260px,1fr);gap:12px 24px;align-items:start;padding:12px 0}
+.staging-crm-view .wf-basic-health .pr-parameter>label:first-child{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 12px;line-height:1.5}
+.staging-crm-view .wf-basic-health .pr-parameter>label:first-child>button{margin:0;font-size:12px;padding:6px 10px;white-space:normal}
+.staging-crm-view .wf-basic-health .pr-parameter>label:first-child>select{grid-column:1/-1;margin:0}
+.staging-crm-view .wf-basic-health .pr-note textarea{min-height:64px;margin-top:6px;line-height:1.5}
+@media(max-width:760px){.staging-crm-view .wf-basic-health .pr-parameter{grid-template-columns:minmax(0,1fr)}.staging-crm-view .wf-basic-health .pr-parameter>label:first-child{grid-template-columns:minmax(0,1fr)}.staging-crm-view .wf-basic-health .pr-parameter>label:first-child>button{justify-self:start}}
+.staging-crm-view .wf{font-size:14px;line-height:1.5}
+.staging-crm-view .wf button{min-height:36px;padding:7px 12px;border-radius:7px}
+.staging-crm-view .wf input:not([type=checkbox]):not([type=radio]),
+.staging-crm-view .wf select,.staging-crm-view .wf textarea{padding:8px 10px}
+.staging-crm-view .wf h1{font-size:25px;margin-bottom:4px}
+.staging-crm-view .wf h2{font-size:18px;margin-bottom:10px}
+.staging-crm-view .wf h3{font-size:15px}
+.staging-crm-view .wf-header{height:68px;padding:10px 22px;gap:20px}
+.staging-crm-view .wf-header .sb-brand-logo img{width:165px;height:44px}
+.staging-crm-view .wf-main{padding:18px 24px 48px}
+.staging-crm-view .wf-title,.staging-crm-view .wf-section-head{gap:12px;margin-bottom:14px}
+.staging-crm-view .wf-breadcrumb{margin-bottom:8px}
+.staging-crm-view .wf-panel{padding:18px;margin-bottom:16px;border-radius:11px}
+.staging-crm-view .wf-columns{gap:16px}
+.staging-crm-view .wf-field{gap:5px;margin-bottom:12px}
+.staging-crm-view .wf-list-row{padding:12px 0;gap:12px}
+.staging-crm-view .wf-tabs{margin-bottom:18px;gap:4px}
+.staging-crm-view .wf-tabs button{padding:9px 10px;border-radius:0}
+.staging-crm-view .wf-filters{gap:6px;margin-bottom:16px}
+.staging-crm-view .wf-filters button{padding:6px 10px;min-height:34px}
+.staging-crm-view .wf-treatment-progress{margin:8px 0 16px}
+.staging-crm-view .wf-next{padding:16px 20px;margin-bottom:16px}
+.staging-crm-view .wf-metrics{gap:12px;margin-bottom:16px}
+.staging-crm-view .wf-metrics article{padding:12px 16px}
+.staging-crm-view .wf-metrics strong{font-size:21px}
+.staging-crm-view .wf-product-group{margin:14px 0}
+.staging-crm-view .wf-product-group>h2{padding:12px 16px;margin:0}
+.staging-crm-view .wf-product-group td,.staging-crm-view .wf-product-group th{padding:11px 12px}
+.staging-crm-view .wf-discussion{margin:12px 0!important}
+.staging-crm-view .wf-discussion>summary{padding:13px 16px;gap:12px}
+.staging-crm-view .wf-discussion>summary b{font-size:15px}
+.staging-crm-view .wf-current,.staging-crm-view .wf-discussion form{padding:16px;gap:16px}
+.staging-crm-view .wf-kit,.staging-crm-view .wf-fund-picker{padding:14px;margin-block:12px}
+.staging-crm-view .wf-kit-row{padding:10px 0}
+.staging-crm-view .wf-task-card>summary{padding:13px 16px}
+.staging-crm-view .wf-flow-list{margin:16px 0}
+.staging-crm-view .wf-flow-list>li{padding:12px 0;gap:12px}
+.staging-crm-view .wf-dialog{padding:22px}
+.staging-crm-view .wf-dialog>header{margin-bottom:16px;padding-bottom:12px}
+@media(min-width:901px){
+ .staging-crm-view .wf .wf-sidebar{top:68px;width:190px;padding:18px 12px;gap:5px}
+ .staging-crm-view .wf-main{margin-inline-start:190px}
+}
+@media(max-width:560px){
+ .staging-crm-view .wf-main{padding:14px 12px 36px}
+ .staging-crm-view .wf-header{height:auto;min-height:68px;padding:10px 14px}
+ .staging-crm-view .wf-panel{padding:14px}
+ .staging-crm-view .wf-dialog{padding:16px}
+}
+.staging-crm-view .wf-basic-health .pr-body{padding-block:4px}
+.staging-crm-view .wf-basic-health .pr-health-row{padding-block:5px}
+.staging-crm-view .wf-basic-health .pr-hint{margin-block:4px}
+.staging-crm-view .wf-basic-health{padding-block:4px!important}
+.staging-crm-view .wf-basic-health .pr-health-row select{min-height:32px;padding-block:4px}
+.staging-crm-view .wf-kit[aria-label="בדיקת פרטי הפקה אינטראקטיבית"] .wf-field{margin-bottom:6px;gap:3px}
+.staging-crm-view .wf-kit[aria-label="בדיקת פרטי הפקה אינטראקטיבית"] .wf-fields{gap:10px}
+.staging-crm-view .wf-warning[role="alert"]{white-space:pre-line}
+@media(pointer:coarse){
+ .staging-crm-view .wf button,.staging-crm-view .wf summary{min-height:44px}
+ .staging-crm-view .wf input:not([type=checkbox]):not([type=radio]),.staging-crm-view .wf select{min-height:44px;font-size:16px}
+}

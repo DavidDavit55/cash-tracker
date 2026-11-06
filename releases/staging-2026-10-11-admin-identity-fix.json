@@ -1,0 +1,15 @@
+{
+  "environment": "staging",
+  "scope": "Correct frontend VITE_ADMIN_EMAIL to match staging server ADMIN_EMAIL",
+  "cause": "Prior frontend build used business email instead of staging-admin@example.invalid, redirecting the authenticated staging admin from /admin/crm to the client home page.",
+  "failedUploadDeployment": "e5b537fc-423e-49cb-9354-2abc37387a40",
+  "candidateDeployment": "ecbcbc5b-5f17-4a54-9378-86bc1444aa48",
+  "artifact": ".release/staging-admin-identity-fix-20261011",
+  "previousArtifact": ".release/staging-connected-20261011",
+  "runtimeUnchanged": true,
+  "productionChanged": false,
+  "status": "SUCCESS; actual browser verified /admin/crm renders owner dashboard with two existing clients and the blue sidebar",
+  "screenshot": ".release/staging-admin-verified-20261011.jpg",
+  "remaining": "Google Tasks shows needs attention; Google synchronization still requires separate verification. Local preview browser reload was blocked by browser policy and was not claimed verified.",
+  "releaseRule": "Read target environment ADMIN_EMAIL before building. Verify actual browser navigation to /admin/crm remains on admin dashboard; bundle checks alone do not establish working access."
+}

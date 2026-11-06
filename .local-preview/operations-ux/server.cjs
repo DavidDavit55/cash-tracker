@@ -1,0 +1,4 @@
+// Isolated loopback-only demo. No API, credentials, external writes or project serving.
+const http=require('node:http');const fs=require('node:fs');const path=require('node:path');
+const files={'/':['index.html','text/html; charset=utf-8'],'/style.css':['style.css','text/css; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8']};
+http.createServer((req,res)=>{const item=files[req.url];if(!item||req.method!=='GET'){res.writeHead(404);return res.end('Not found')}res.writeHead(200,{'Content-Type':item[1],'Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; connect-src 'none'; img-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; form-action 'none'"});res.end(fs.readFileSync(path.join(__dirname,item[0])))}).listen(5236,'127.0.0.1',()=>console.log('Operations UX demo: http://127.0.0.1:5236'));

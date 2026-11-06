@@ -1,0 +1,17 @@
+from pathlib import Path
+r=Path(r'C:\Users\david\OneDrive\שולחן העבודה\KING-DAVID\davit-operations')
+def edit(path,old,new):
+ p=r/path;s=p.read_text(encoding='utf-8');assert old in s,(path,old[:60]);p.write_text(s.replace(old,new),encoding='utf-8')
+edit('backend/app/services/simple_process.py',"        if linked and not (kind=='claim' and data.get('newCase') is True):","        if kind=='claim' and data.get('newCase') is True:short(data,'caseDescription')\n        if linked and not (kind=='claim' and data.get('newCase') is True):")
+edit('backend/app/services/guided_creation.py',"  if existing:\n   p=existing[0];changed=False", "  if len(existing)>1:\n   return options('איזה טיפול קיים לפתוח?', [{'id':p['id'],'label':(p.get('caseDescription') or p.get('detail') or KINDS[kind])+' · #'+p['id'][:8]} for p in existing],'create_existing')\n  if existing:\n   p=existing[0];changed=False")
+edit('backend/app/services/guided_creation.py'," if stage=='create_claim_description':", " if stage=='create_existing':\n  selected=choose()\n  if not selected:return options('בחר את הטיפול הרצוי.',state['options'],stage)\n  p=next(p for p in c['simpleProcesses'] if p['id']==selected['id'])\n  state.clear();state.update(client=c['id'],process=p['id'],stage='action',options=[])\n  return {'changed':False,'clientId':c['id'],'process':p,'reply':reply(p)}\n if stage=='create_claim_description':")
+edit('frontend/src/pages/OperationsDesk.tsx','onChange={e=>setClientId(e.target.value)}','onChange={e=>{setClientId(e.target.value);setProductId(\'\');setCompany(\'\');setPolicy(\'\');setNewCase(false);setCaseDescription(\'\')}}')
+edit('backend/app/services/operations_bot.py',"    if start:\n        matches=", "    if start:\n        if start[1]=='הפקה':return {'reply':'להצטרפות חדשה יש להוסיף גיוס בתיק; המוצר והטיפול ייפתחו יחד.','changed':False}\n        matches=")
+# Legacy unit test retains transition/retry coverage using a service request.
+edit('backend/tests/test_operations_bot.py',"פתח הפקה ללקוח", "פתח שינוי ללקוח")
+edit('backend/tests/test_operations_bot.py',"and not r['process']['modeConfirmed']", "and r['process']['modeConfirmed']")
+edit('backend/tests/test_operations_bot.py',"'mode':'new'},'details')", "'mode':'new','serviceType':'fees'},'details')\n    transition(c,pid,'policy',{'policy':'DEMO-LEGACY'},'policy')")
+edit('backend/tests/test_operations_bot.py',"'company':'דמה'},'details');office.save", "'company':'דמה'},'details');transition(c,p['id'],'policy',{'policy':'DEMO-CLAIM'},'policy');office.save")
+edit('backend/tests/test_operations_bot.py',"    app=FastAPI();app.include_router", "    c=office.record(db,c['id']);rev=c['revision'];c['products']=[{'id':'demo-product','category':'בריאות','name':'בריאות','company':'דמה','policy':'DEMO'}];office.save(db,c,rev,'בדיקה')\n    app=FastAPI();app.include_router")
+edit('backend/tests/test_operations_bot.py',"    assert len(office.record(db,c['id'])['simpleProcesses'])==1", "    assert not office.record(db,c['id']).get('simpleProcesses')\n    params['Body']=['1'];params['MessageSid']=['SM'+'b'*32];content=urlencode(params,doseq=True);headers['x-twilio-signature']=wa.signature('https://example.test'+wa.PATH,params,'test-only')\n    assert http.post(wa.PATH,content=content,headers=headers).status_code==200\n    assert http.post(wa.PATH,content=content,headers=headers).status_code==200\n    assert len(office.record(db,c['id'])['simpleProcesses'])==1")
+print('QA followup changes applied')

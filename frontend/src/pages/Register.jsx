@@ -1,3 +1,5 @@
+import { digitsOnly, phoneDigits } from '../lib/numericInput';
+import BrandLogo from '../sandbox/BrandLogo';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
@@ -47,38 +49,29 @@ const CONSENT_ITEMS = [
   { key: 'har_bituach', field: 'consent_har_bituach', title: "הרשאה לאתר הר הביטוח (נספח ה')", short: 'מאפשרת לדוד לאתר עבורך מוצרי ביטוח באתר הממשלתי הר הביטוח.' },
 ];
 
+function readSavedProgress() {
+  if (!localStorage.getItem('token')) return null;
+  try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null'); }
+  catch { return null; }
+}
+
 export default function Register() {
+  const [saved] = useState(readSavedProgress);
   const { register } = useAuth();
   const nav = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => [2, 3, 4].includes(saved?.step) ? saved.step : 1);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const [account, setAccount] = useState({ name: '', email: '', phone: '' });
+  const [account, setAccount] = useState(() => ({ name: saved?.account?.name || '', email: saved?.account?.email || '', phone: phoneDigits(saved?.account?.phone) }));
   const [otpStage, setOtpStage] = useState('idle'); // idle | sent
   const [otpCode, setOtpCode] = useState('');
-  const [idInfo, setIdInfo] = useState({ id_number: '', birth_date: '', id_issue_date: '', marital_status: '', monthly_income: '' });
-  const [answers, setAnswers] = useState({});
-  const [consents, setConsents] = useState({ consent_maslaka: false, consent_insurance_poa: false, consent_har_bituach: false });
+  const [idInfo, setIdInfo] = useState(() => ({ birth_date: '', id_issue_date: '', marital_status: '', monthly_income: '', ...saved?.idInfo, id_number: digitsOnly(saved?.idInfo?.id_number, 9) }));
+  const [answers, setAnswers] = useState(() => saved?.answers || {});
+  const [consents, setConsents] = useState(() => saved?.consents || { consent_maslaka: false, consent_insurance_poa: false, consent_har_bituach: false });
   const [signature, setSignature] = useState(null);
   const [openConsent, setOpenConsent] = useState(null);
 
-  // אם המשתמש כבר עבר שלב 1 (יש token, טלפון כבר אומת) ויצא באמצע - משחזרים את מה שכבר
-  // מילא במקום להכריח אותו למלא הכל מחדש; רק שלב 1 (שם/טלפון/OTP) לא ניתן לדילוג כי אין
-  // דרך לדעת בלי לפנות לשרת אם הטלפון עדיין תקף.
-  useEffect(() => {
-    if (!localStorage.getItem('token')) return;
-    try {
-      const saved = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null');
-      if (!saved) return;
-      setStep(saved.step || 1);
-      setAccount(saved.account || account);
-      setIdInfo(saved.idInfo || idInfo);
-      setAnswers(saved.answers || {});
-      setConsents(saved.consents || consents);
-    } catch { /* localStorage פגום - מתעלמים, ההרשמה פשוט מתחילה מחדש */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (step > 1) {
@@ -167,7 +160,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <img src="/logo.png" alt="לוגו" style={{ height: '48px', objectFit: 'contain', marginBottom: '8px' }} />
+        <div className="auth-brand"><BrandLogo /></div>
         <h1>NETWORTH</h1>
         <p className="auth-subtitle">שלב {step} מתוך 4</p>
 
@@ -175,7 +168,7 @@ export default function Register() {
           <form onSubmit={submitOtp}>
             <div className="form-group">
               <label>קוד אימות נשלח ב-SMS ל-{account.phone}</label>
-              <input value={otpCode} onChange={e => setOtpCode(e.target.value)} required placeholder="123456" inputMode="numeric" />
+              <input type="text" pattern="[0-9]{6}" autoComplete="one-time-code" dir="ltr" value={otpCode} onChange={e => setOtpCode(digitsOnly(e.target.value, 6))} required placeholder="123456" inputMode="numeric" />
             </div>
             {error && <div className="form-error">{error}</div>}
             <button type="submit" className="btn-primary" disabled={loading}>
@@ -192,7 +185,7 @@ export default function Register() {
             </div>
             <div className="form-group">
               <label>טלפון</label>
-              <input value={account.phone} onChange={e => setAccount(p => ({ ...p, phone: e.target.value }))} required placeholder="050-1234567" />
+              <input type="text" inputMode="numeric" pattern="0[0-9]{9}" autoComplete="tel-national" dir="ltr" value={account.phone} onChange={e => setAccount(p => ({ ...p, phone: phoneDigits(e.target.value) }))} required placeholder="050-1234567" />
             </div>
             <div className="form-group">
               <label>אימייל</label>
@@ -209,7 +202,7 @@ export default function Register() {
           <form onSubmit={submitIdInfo}>
             <div className="form-group">
               <label>תעודת זהות</label>
-              <input value={idInfo.id_number} onChange={e => setIdInfo(p => ({ ...p, id_number: e.target.value }))} required placeholder="123456789" />
+              <input type="text" inputMode="numeric" pattern="[0-9]{9}" dir="ltr" value={idInfo.id_number} onChange={e => setIdInfo(p => ({ ...p, id_number: digitsOnly(e.target.value, 9) }))} required placeholder="123456789" />
             </div>
             <div className="form-group">
               <label>תאריך לידה</label>

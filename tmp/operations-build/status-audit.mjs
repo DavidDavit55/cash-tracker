@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {simpleProductStatus as status} from '../../../davit-operations/frontend/src/pages/simple-product-status.js';
+const product={id:'p'};
+const appointment={productId:'p',kind:'appointment',state:'new'};
+assert.equal(status({simpleProcesses:[appointment]},product).label,'ממתין למינוי סוכן');
+assert.equal(status({simpleProcesses:[{...appointment,state:'handled',verified:true}]},product).label,'מינוי סוכן נקלט');
+assert.equal(status({simpleProcesses:[appointment]},{...product,commissionPolicy:{status:'active'}}),null);
+assert.equal(status({simpleProcesses:[{productId:'p',kind:'production',state:'followup',verified:true,effective:'2026-12-01',agreed:{effective:'2026-10-01'}}]},product,'2026-10-28').label,'הופק — תחילה עתידית');
+assert.equal(status({simpleProcesses:[{productId:'p',kind:'production',state:'done',verified:true},appointment]},product).label,'הופק — ההפקה אומתה');
+console.log('5 product-status regressions passed');

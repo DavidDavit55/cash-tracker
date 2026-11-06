@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {correctConsolidationAgreement as correct} from '../.local-preview/workflow-consolidation.js';
+const rows=['מניות','מניות סחיר','S&P 500'].map((name,i)=>({id:String(i+1),name,manager:'הפניקס',classification:'מקיפה',reportPeriod:'202608'}));
+const agreement={target:'הפניקס',track:'משלימה',depositFee:1,balanceFee:0.1};
+const c={summary:'original',summarySent:true,products:[{balance:99}],consolidations:[{id:'g',targetMode:'new',agreement,sourceDecisionIds:['a','b'],receipts:{}}],decisions:[{id:'a',sent:true,transfer:{verified:false},companyReport:{kind:'completed'}},{id:'b'},{id:'other'}]};
+const selection={targetManager:'הפניקס',allocations:rows.map((r,i)=>({fundId:r.id,percent:i?25:50}))};
+const expected=JSON.stringify(agreement),next=correct(c,'g',selection,'תיקון לפי הסוכן',rows,expected);
+assert.deepEqual(next.products,c.products);assert.deepEqual(next.decisions[0].transfer,c.decisions[0].transfer);assert.deepEqual(next.decisions[0].companyReport,c.decisions[0].companyReport);assert.deepEqual(next.decisions[2],c.decisions[2]);assert.equal(next.consolidations[0].corrections[0].previousSummary,'original');assert.equal(c.consolidations[0].agreement.track,'משלימה');assert.equal(next.summarySent,false);assert.equal(next.decisions[1].allocations.length,3);
+assert.throws(()=>correct(next,'g',selection,'reason',rows,expected));
+assert.throws(()=>correct(c,'g',selection,'',rows,expected));
+assert.throws(()=>correct({...c,decisions:[{id:'a',produced:true}]},'g',selection,'reason',rows,expected));
+assert.throws(()=>correct(c,'g',selection,'reason',rows.map((r,i)=>({...r,classification:i?'כללית':'מקיפה'})),expected));
+console.log('PASS correction history, exact source scope, preserved evidence, stale guard and mixed classifications');

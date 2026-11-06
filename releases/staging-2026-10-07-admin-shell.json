@@ -1,0 +1,19 @@
+{
+ "environment":"staging",
+ "deploymentId":"b3a18c5b-580d-4627-8745-1ff3ba5c28d2",
+ "status":"success",
+ "previousDeploymentId":"387c2b72-1af4-4e55-b862-1f2fa6e2be36",
+ "previousArtifact":".release/staging-20261007-before-admin-shell",
+ "candidateArtifact":".release/staging-20261007-admin-shell",
+ "privateBackup":"2026-10-07T15-06-39-590Z",
+ "crmRevisionBefore":926,
+ "crmRevisionAfter":926,
+ "sourceFilesBackedUp":16,
+ "unchangedRuntimeFiles":69,
+ "automatedTestsPassed":108,
+ "verification":"Build, authenticated browser dashboard/week/budget/mail navigation, unauthenticated and client access restrictions passed. Browser mutations blocked; no write or delivery smoke test performed.",
+ "crmChunk":"StagingCrm-V7D-or5h.js",
+ "productionChanged":false,
+ "externalSends":0,
+ "scope":"Unified admin shell with existing WorkflowDemo callbacks and live staging budget API. No preview fixtures, no global API adapter override, no auto-seeding. Claims and commissions remain construction placeholders."
+}

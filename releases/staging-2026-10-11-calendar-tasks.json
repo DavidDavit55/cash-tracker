@@ -1,0 +1,32 @@
+{
+  "environment": "staging",
+  "deploymentId": "f56f546e-c1a6-4554-a2a0-1708a934ef7d",
+  "artifact": ".release/staging-connected-20261011",
+  "previousArtifact": ".release/staging-20261007-gate-password",
+  "verification": {
+    "servedMain": "index-BiCnDQfA.js",
+    "servedCrm": "StagingCrm-DVlxPwGa.js",
+    "reconnectControlsVerifiedInServedBundle": true,
+    "workflowAndIntegrationTestsPassed": 24,
+    "crmRevisionBefore": 930,
+    "crmRevisionAfter": 930,
+    "crmStateHashUnchanged": true,
+    "activeClients": 2,
+    "verifiedPrivateFiles": 16,
+    "runtimeMatchesPreviousArtifact": true
+  },
+  "backupBefore": "2026-10-11T19-41-55-489Z",
+  "backupAfter": "2026-10-11T19-45-52-363Z",
+  "googleSync": {
+    "savedCalendarConnection": true,
+    "savedTasksConnection": true,
+    "calendarAttemptHttpStatus": 400,
+    "tasksAttemptHttpStatus": 400,
+    "cause": "not established; existing API returns generic error",
+    "nextAction": "Owner reauthorizes calendar and tasks separately, then retry actual sync and verify. Do not claim connected based only on saved credentials."
+  },
+  "mailConnectedOrSentByThisWork": false,
+  "existingMailConfigurationChanged": false,
+  "productionChanged": false,
+  "completion": "awaiting owner Google authorization and successful sync verification"
+}

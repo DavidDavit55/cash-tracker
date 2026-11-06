@@ -19,6 +19,8 @@ const DEFAULT_CATEGORIES = [
 router.post('/register', async (req, res) => {
   const { email, name, phone } = req.body;
   if (!email || !name || !phone) return res.status(400).json({ error: 'שדות חסרים' });
+  if(typeof email!=='string'||typeof phone!=='string'||typeof name!=='string')return res.status(400).json({error:'פרטים לא תקינים'});
+  if(process.env.ADMIN_EMAIL&&email.trim().toLowerCase()===process.env.ADMIN_EMAIL.trim().toLowerCase())return res.status(403).json({error:'יש להתחבר לחשבון הניהול באמצעות קוד SMS'});
 
   const client = await pool.connect();
   try {
@@ -36,12 +38,22 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'המייל או הטלפון כבר רשומים - פנה לתמיכה אם ההרשמה הקודמת נתקעה' });
     }
     const existing = existingRows[0];
+    // An unfinished registration is still an owned account. Never reclaim it
+    // merely by supplying its email or phone number.
+    if (existing) {
+      let identity;
+      try { identity=jwt.verify(req.headers.authorization?.split(' ')[1]||'',process.env.JWT_SECRET); } catch {}
+      if(identity?.id!==existing.id){
+        await client.query('ROLLBACK');
+        return res.status(409).json({error:'החשבון כבר קיים. יש להתחבר באמצעות קוד SMS ולהמשיך בהרשמה.'});
+      }
+    }
 
     let user;
     if (existing) {
       const { rows } = await client.query(
-        'UPDATE users SET email=$1, name=$2, phone=$3 WHERE id=$4 RETURNING id,email,name,phone',
-        [email, name, phone, existing.id]
+        'SELECT id,email,name,phone FROM users WHERE id=$1',
+        [existing.id]
       );
       user = rows[0];
     } else {
@@ -75,8 +87,8 @@ router.post('/login/send', async (req, res) => {
   const { phone } = req.body;
   if (!phone) return res.status(400).json({ error: 'חסר מספר טלפון' });
   try {
-    const { rows } = await pool.query('SELECT id FROM users WHERE phone=$1', [phone]);
-    if (!rows.length) return res.status(404).json({ error: 'מספר טלפון לא נמצא' });
+    const { rows } = await pool.query(`SELECT id FROM users WHERE regexp_replace(regexp_replace(phone, '[^0-9]', '', 'g'), '^(00972|972)', '0')=regexp_replace(regexp_replace($1, '[^0-9]', '', 'g'), '^(00972|972)', '0')`, [phone]);
+    if (rows.length !== 1) return res.status(404).json({ error: 'מספר טלפון לא נמצא' });
     await verifyService().verifications.create({ to: toE164(phone), channel: 'sms' });
     res.json({ sent: true });
   } catch (err) {
@@ -92,8 +104,8 @@ router.post('/login/check', async (req, res) => {
     const check = await verifyService().verificationChecks.create({ to: toE164(phone), code });
     if (check.status !== 'approved') return res.status(400).json({ error: 'קוד שגוי' });
 
-    const { rows } = await pool.query('SELECT id,email,name FROM users WHERE phone=$1', [phone]);
-    if (!rows.length) return res.status(404).json({ error: 'מספר טלפון לא נמצא' });
+    const { rows } = await pool.query(`SELECT id,email,name FROM users WHERE regexp_replace(regexp_replace(phone, '[^0-9]', '', 'g'), '^(00972|972)', '0')=regexp_replace(regexp_replace($1, '[^0-9]', '', 'g'), '^(00972|972)', '0')`, [phone]);
+    if (rows.length !== 1) return res.status(404).json({ error: 'מספר טלפון לא נמצא' });
     const user = rows[0];
 
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });

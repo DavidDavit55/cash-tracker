@@ -1,0 +1,11 @@
+const {chromium}=require('C:/Users/david/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict');
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:5208/report-preview');await page.locator('.nw-product-card').first().waitFor();
+assert.equal(await page.locator('.nw-product-card').count(),12);
+assert.equal(await page.locator('.nw-transition').nth(1).getByText('515583371',{exact:false}).count(),0);
+assert.equal(await page.locator('.nw-source-tabs,.nw-date-bar,.nw-dedup-note').count(),0);assert.equal(await page.getByRole('button',{name:/מקור מסלקה|מקור הר הביטוח/}).count(),0);await page.getByRole('textbox',{name:'חיפוש מוצר'}).fill('14781014');assert.equal(await page.locator('.nw-product-card').count(),1);
+await page.locator('.nw-management summary').click();assert.equal(await page.locator('.nw-snapshot').count(),2);
+await page.getByLabel('מצב טיפול',{exact:true}).selectOption('ממתין למסמך');await page.getByLabel('הערת טיפול').fill('בדיקת התנסות');await page.getByRole('button',{name:'שמירת התנסות'}).click();assert.match(await page.getByRole('status').last().innerText(),/ממתין למסמך/);
+await page.screenshot({path:'C:/Users/david/.codex/visualizations/2026/09/27/01a0e296-a8a5-7691-873d-c13d6c84eec1/product-management.png',fullPage:true});
+assert.equal(await page.getByRole('button',{name:'טבלה מפורטת'}).count(),0);assert.equal(await page.locator('.nw-view-toggle, .report-table').count(),0);
+await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.deepEqual(errors,[]);console.log('PASS: 12 unique products, accident excluded, source search, 2 snapshots, management save, table parity, mobile, no page errors');await browser.close();})().catch(e=>{console.error(e);process.exit(1)});

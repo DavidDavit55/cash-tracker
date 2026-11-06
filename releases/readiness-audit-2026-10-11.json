@@ -1,0 +1,25 @@
+{
+ "date":"2026-10-11",
+ "version":"1.0.0",
+ "decision":"not-ready-for-production",
+ "productionReleaseAuthorized":false,
+ "deploymentPerformed":false,
+ "databaseWrites":false,
+ "externalMessagesSent":false,
+ "preservation":{"sourceFiles":574,"snapshot":".release/versions/pre-readiness-20261011","sha256":"297a22f383e51ec258dff85edd02f7bef8ace249eae98392d798a596ae947dd1","verified":true,"isDatabaseBackup":false},
+ "localFixes":["Replace public uploads serving with authenticated owner-scoped receipt downloads","Update expense receipt download UI to send bearer authentication","Add fail-closed local release readiness command"],
+ "tests":{"workflowAndFrontend":{"passed":101,"failed":0},"backend":{"passed":31,"failed":1,"failure":"Historical bank fixture absent from Downloads; do not count this reconciliation check as passed"},"snapshot":{"passed":8,"failed":0},"productionBuild":"passed; .release/readiness-20261011-build","diffWhitespace":"passed"},
+ "dependencyAudit":{"scope":"backend npm audit --omit=dev","critical":1,"high":14,"moderate":2,"low":1,"total":18,"note":"Advisory counts include transitive dependencies; exploitability not yet assessed. No forced package changes."},
+ "blockers":[
+  "Production CRM authentication and storage integration not implemented/verified; do not promote by changing environment flag",
+  "Dependency security advisories require remediation and regression testing",
+  "Current production database and document restore drill not performed",
+  "Registration resume currently identifies unsigned accounts by supplied email/phone before issuing JWT; ownership threat review required",
+  "Full built artifact secret/PII scan and source-map/public-path verification pending",
+  "Production mail/calendar/Tasks end-to-end checks and recipient safety pending",
+  "Historical bank import fixture missing",
+  "Current deployment IDs and authenticated browser parity not reverified in this audit",
+  "Receipt fix not deployed and needs authenticated browser acceptance"
+ ],
+ "limitations":["Local regression success does not prove every historic business agreement","No claim of zero data loss or zero security vulnerabilities","Readiness script is a manual check, not enforced Railway CI/CD","Previous staging design deployment supersedes the obsolete local-only design blocker in the October 7 report"]
+}

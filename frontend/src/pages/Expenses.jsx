@@ -21,6 +21,16 @@ export default function Expenses() {
   const [loading, setLoading] = useState(false);
   const [duplicates, setDuplicates] = useState([]);
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [receiptError,setReceiptError] = useState('');
+  async function downloadReceipt(expense) {
+    setReceiptError('');
+    try {
+      const {data}=await api.get(`/expenses/${expense.id}/receipt`,{responseType:'blob'});
+      const url=URL.createObjectURL(data),link=document.createElement('a');
+      link.href=url;link.download=expense.receipt_filename||'receipt';link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    } catch {setReceiptError('לא ניתן להוריד את הקבלה. נסה שוב.');}
+  }
 
   const load = async () => {
     setLoading(true);
@@ -153,7 +163,7 @@ export default function Expenses() {
       )}
 
       {loading ? (
-        <div className="loading">טוען...</div>
+        <div className="app-loading" role="status">טוען...</div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">🧾</div>
@@ -176,7 +186,7 @@ export default function Expenses() {
                 <div className="expense-right">
                   <div className="expense-amount">₪{parseFloat(e.amount).toLocaleString('he-IL', { minimumFractionDigits: 2 })}</div>
                   <div className="expense-actions">
-                    {e.receipt_url && <a href={`${import.meta.env.VITE_API_URL?.replace('/api','')||'http://localhost:3001'}${e.receipt_url}`} target="_blank" rel="noreferrer" className="icon-btn">🧾</a>}
+                    {e.receipt_url && <button type="button" title={receiptError||'הורדת קבלה'} aria-label={receiptError||'הורדת קבלה'} onClick={()=>downloadReceipt(e)} className="icon-btn">🧾</button>}
                     <button className="icon-btn" onClick={() => setEditItem(e)}><Edit2 size={14}/></button>
                     <button className="icon-btn danger" onClick={() => deleteExpense(e.id)}><Trash2 size={14}/></button>
                   </div>

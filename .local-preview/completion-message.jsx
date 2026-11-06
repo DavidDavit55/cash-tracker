@@ -1,0 +1,5 @@
+import React,{useState} from 'react';
+export default function CompletionMessage({d,change}){
+ const [message,setMessage]=useState(d.completionMessage||`שלום, הטיפול ב${d.productCategory||'מוצר'} שלך ב${d.target||d.sourceCompany||'חברת הביטוח'} הסתיים בהצלחה.${d.productionVerification?.values?.effective?' תאריך תחילת הביטוח: '+d.productionVerification.values.effective+'.':''} אני זמין לכל שאלה.\nדוד`),[status,setStatus]=useState('');
+ return <div><label className="wf-field">הודעת וואטסאפ לסיום<textarea value={message} onChange={e=>setMessage(e.target.value)} onBlur={()=>change({completionMessage:message},'נשמר נוסח עדכון הלקוח')}/></label><button type="button" className="secondary" onClick={async()=>{try{await navigator.clipboard.writeText(message);setStatus('הנוסח הועתק — לא נשלחה הודעה');}catch{setStatus('יש לסמן ולהעתיק את הטקסט ידנית');}}}>העתקת הנוסח לוואטסאפ</button><p className="wf-muted">אין שליחה אוטומטית. יש לאשר שהלקוח עודכן רק לאחר השליחה בפועל.</p>{status&&<p role="status">{status}</p>}</div>;
+}

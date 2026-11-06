@@ -1,0 +1,19 @@
+{
+  "date": "2026-09-30",
+  "scope": "Staging frontend only; no CRM data mutation or direct external send",
+  "pension": {
+    "cause": "Provider/account-only keys collapsed separate pension plans; balance aggregation omitted other reported contribution components.",
+    "fix": "Pension plan/type discriminator; sum reported PerutYitrot balances once; preserve zero versus missing.",
+    "recovery": "Explicit source re-upload repairs matching legacy plan IDs and adds missing funds without duplicating report history. Existing completed-workflow import safeguards remain.",
+    "verification": "Four source funds with exact balances; repeat import idempotent; original product references and notes retained."
+  },
+  "display": "Product monetary amounts rounded to whole ILS for display only. Stored values and fee percentages unchanged.",
+  "calendar": {
+    "retryDelaysMs": [2000, 5000, 15000],
+    "maxAutomaticRetries": 3,
+    "recovery": "Pending IDs saved in sessionStorage after CRM save and before sync; resume on same-tab reload. Old unmarked unsynced appointments still need manual initial sync.",
+    "limits": "Browser-open retries only; no background scheduler. Explicit validation, permission and conflict errors do not retry automatically.",
+    "verification": "Synthetic UI initial failure retried automatically; same-event edits/cancellation pass; bounded retry and pending persistence tests pass."
+  },
+  "deploymentId": "86f5b00d-f174-4395-b971-34d1d3d04b45"
+}

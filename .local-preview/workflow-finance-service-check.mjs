@@ -1,0 +1,7 @@
+import assert from 'node:assert/strict';
+import {transferReady,businessDate} from './workflow-process.js';
+import {scheduleService} from './workflow-service.js';
+let d={sourceBalance:100000,policy:'p',fundsConfirmed:true,transfer:{verified:true,inactive:true,received:'100050',document:{data:'test'}}};
+assert.ok(transferReady(d));d.transfer.received='100051';assert.ok(!transferReady(d));d.transfer.resolution='בירור ותיעוד אישור הסכום';assert.ok(transferReady(d));d.transfer.document=null;assert.ok(!transferReady(d));
+d={sourceBalance:100000,policy:'p',fundsConfirmed:true,transfer:{verified:true,salary:10000,employee:6,employer:6.5,severance:6,received:101850,document:{data:'test'}}};assert.ok(transferReady(d));d.transfer.received=101851;assert.ok(!transferReady(d));d.transfer.received=100000;d.transfer.requiresDeposit=true;assert.ok(!transferReady(d));Object.assign(d.transfer,{depositDate:'2026-09-27',depositActual:1850,payrollSent:true});assert.ok(transferReady(d));
+const c={appointments:[],email:'demo@example.com'};const s=scheduleService(c,'2026-09-27T10:00:00');assert.equal(s.appointments.length,1);assert.match(s.appointments[0].when,/T15:00$/);assert.equal(scheduleService(s,'2026-09-28').appointments.length,1);const other=scheduleService(c,'2026-09-27T10:00:00',s.appointments);assert.match(other.appointments[0].when,/T15:30$/);assert.equal(businessDate('2026-09-27',14),'2026-10-15');console.log('PASS transfer thresholds, evidence and payroll gates; service deduplication and local calendar collision');

@@ -1,7 +1,10 @@
+import ClientMessageHistory from '../components/ClientMessageHistory';
+import ReportHistory from '../components/ReportHistory';
 import { useState, useEffect } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../api/client';
+import ReviewEditor from '../sandbox/ReviewEditor';
 
 const FIELDS = [
   ['id_number', 'תעודת זהות'],
@@ -63,10 +66,11 @@ export default function AdminClientDetail() {
       <div className="page-header">
         <Link to="/admin/clients">← חזרה ללקוחות</Link>
         <h2>{client?.name || 'לקוח'}</h2>
+        {client && <Link className="btn-primary" to={`/admin/clients/${id}/dashboard`}>צפייה בדשבורד הלקוח</Link>}
       </div>
 
       {error && <div className="form-error">{error}</div>}
-      {!client && !error && <div className="loading">טוען...</div>}
+      {!client && !error && <div className="app-loading" role="status">טוען...</div>}
 
       {client && (
         <div className="card" style={{ padding: '16px' }}>
@@ -94,6 +98,19 @@ export default function AdminClientDetail() {
           ))}
         </div>
       )}
+
+      {client && financial && <div className="card production-review" style={{padding: 20, marginTop: 16}}><p>{client.email === import.meta.env.VITE_ADMIN_EMAIL ? 'זהו חשבון אדמין — פרסום המלצות לא ישלח אליו הודעת לקוח.' : `אישור ופרסום ישלחו הודעת WhatsApp ללקוח ${client.name}${client.phone ? ` (${client.phone})` : ' — מספר טלפון חסר'}. שמירת טיוטה לא שולחת הודעה.`}</p>
+          <ReviewEditor key={id + financial.data_version} client={{ ...financial, review: financial.review, reviewDraft: financial.review_draft, updatedAt: financial.data_version }} save={async draft => {
+        try {
+          const { data } = await api.post(`/admin/clients/${id}/review`, draft);
+          setFinancial(current => ({ ...current, ...data }));
+          return data;
+        } catch (err) { throw new Error(err.response?.data?.error || 'שמירת ההמלצות נכשלה', { cause: err }); }
+      }} /></div>}
+
+      {client && <ReportHistory clientId={id} />}
+      {client && <p><Link to={`/admin/mail?clientId=${id}`}>מיילים ששויכו ללקוח</Link></p>}
+      {client && <ClientMessageHistory clientId={id} revision={financial?.review?.publishedAt} />}
 
       {client && client.signature_data && (
         <div className="card" style={{ padding: '16px', marginTop: '12px' }}>
@@ -128,7 +145,7 @@ export default function AdminClientDetail() {
               <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>גמל ופנסיה ({financial.pension_data.length})</div>
               {financial.pension_data.map(p => (
                 <div key={p.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '3px 0' }}>
-                  {p.name} · {p.provider} · ₪{Math.round(p.balance || 0).toLocaleString('he-IL')}
+                  {p.name}{(p.isCollective || p.groupClassification) ? ' · קולקטיב' : ''} · {p.provider} · ₪{Math.round(p.balance || 0).toLocaleString('he-IL')}
                 </div>
               ))}
             </div>
@@ -138,7 +155,7 @@ export default function AdminClientDetail() {
               <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>ביטוחים - מסלקה ({financial.insurance_data.length})</div>
               {financial.insurance_data.map(p => (
                 <div key={p.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '3px 0' }}>
-                  {p.name} · {p.provider}{p.monthlyPremium != null ? ` · ₪${p.monthlyPremium}/חודש` : ''}
+                  {p.name}{(p.isCollective || p.groupClassification) ? ' · קולקטיב' : ''} · {p.provider}{p.monthlyPremium != null ? ` · ₪${p.monthlyPremium}/חודש` : ''}
                 </div>
               ))}
             </div>
@@ -148,7 +165,7 @@ export default function AdminClientDetail() {
               <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>הר הביטוח ({financial.har_bituach_data.length})</div>
               {financial.har_bituach_data.map(p => (
                 <div key={p.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '3px 0' }}>
-                  {p.name} · {p.provider}{p.monthlyPremium != null ? ` · ₪${p.monthlyPremium}/חודש` : ''}
+                  {p.name}{(p.isCollective || p.groupClassification) ? ' · קולקטיב' : ''} · {p.provider}{p.monthlyPremium != null ? ` · ₪${p.monthlyPremium}/חודש` : ''}
                 </div>
               ))}
             </div>

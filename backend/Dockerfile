@@ -1,17 +1,10 @@
-FROM node:20-alpine
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+FROM node:24-alpine
+RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --production
-COPY . .
-RUN mkdir -p uploads whatsapp-session
+RUN npm ci --omit=dev
+COPY src ./src
+RUN mkdir -p uploads && chown -R node:node /app
+USER node
 EXPOSE 3001
 CMD ["node", "src/index.js"]

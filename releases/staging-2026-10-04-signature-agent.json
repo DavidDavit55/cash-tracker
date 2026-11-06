@@ -1,0 +1,19 @@
+{
+  "environment": "staging",
+  "productionDeploymentAuthorized": false,
+  "deploymentId": "7b519647-9d59-4081-b711-a52170824084",
+  "status": "success-verified",
+  "postDeploymentVerification": {"health": "passed", "accessControls": "passed", "testedBundleSha256Match": true, "crmRevision": 876},
+  "crmChunk": "StagingCrm-CA_nTItx.js",
+  "tests": {"regression": 39, "isolatedBrowserScenarios": 3, "snapshotTool": 8, "runtimeImports": "passed"},
+  "beforeSnapshot": "staging-20261004-before-signature-agent-fix",
+  "candidateSnapshot": "staging-20261004-signature-agent-fix",
+  "privateDataBackupRevision": 876,
+  "privateDataBackupFiles": 14,
+  "previousDeploymentId": "cb494ec0-e462-4b0a-b271-ca32b24023ed",
+  "previousImageDigest": "sha256:b49558a91fd48c9ab23bcf51dc5004b0dcd0a26fc48fefe35d92d7ad59ba2996",
+  "recoveryLimitations": "Previous local package and deployed frontend core assets saved separately. Local package was not byte-identical to deployed frontend; exact deployed server source not retrieved (SSH unavailable). HTTP asset discovery can include SPA fallback responses; only real JS/CSS and index hashes identify core frontend recovery. No full restore drill performed.",
+  "crmWritesByReleaseChecks": 0,
+  "customerMessagesSent": 0,
+  "changes": ["Explicit kit-scoped shared signature", "Change checks after verified appointment only", "Explicit discount agreement; legacy review without guessed consent"]
+}

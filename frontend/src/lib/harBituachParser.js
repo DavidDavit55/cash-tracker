@@ -93,9 +93,11 @@ export function groupHarBituachByPolicy(rows) {
 
   return Array.from(byPolicy.entries()).map(([policyNum, policyRows]) => {
     const first = policyRows[0];
-    const monthlyPremium = Math.round(policyRows.reduce((s, r) => s + monthlyOf(r), 0));
+    const monthlyPremium = Math.round(policyRows.reduce((s, r) => s + monthlyOf(r), 0) * 100) / 100;
     const allText = policyRows.map(r => `${r.product} ${r.classification} ${r.notes}`).join(' ');
     const isTempRisk = /ריסק זמני/.test(allText);
+    // Preserve collective classification, including employer and HMO group policies.
+    const groupClassification = policyRows.map(r => r.classification).find(c => /קבוצתי|קולקטיב/.test(c));
     return {
       id: policyNum,
       type: guessType(`${first.section} ${first.branch} ${first.product}`),
@@ -105,6 +107,8 @@ export function groupHarBituachByPolicy(rows) {
       coverage: null,
       warning: isTempRisk ? 'yellow' : null,
       warningText: isTempRisk ? 'ריסק זמני' : null,
+        groupClassification: groupClassification || policyRows.map(r => r.classification).find(Boolean) || null,
+        isCollective: groupClassification ? true : policyRows.some(r => /אישי|פרט/.test(r.classification || '')) ? false : undefined,
       coverageItems: policyRows.map(r => {
         const label = [r.subBranch, r.product].filter(Boolean).join(' - ') || 'כיסוי';
         const amount = parseFloat(r.premium) ? `₪${r.premium}${r.premiumType ? ` (${r.premiumType})` : ''}` : '';

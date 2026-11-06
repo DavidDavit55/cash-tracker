@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {inboundTransferDefaults,transferDraftWithEvidence} from '../.local-preview/inbound-transfer.js';
+const d={id:'d',companyReport:{mailId:'m'}},p={policy:'4928548'};
+const m={id:'m',decisionId:'d',identityConfirmed:true,appliedAt:'2026-10-01',pdf:{id:'pdf',name:'confirmation.pdf'},report:{kind:'completed',sourcePolicy:'4928548',targetPolicy:'3536028081',amount:5966,effective:'2026-09-30'}};
+const before=JSON.stringify({d,p,m});
+const result=transferDraftWithEvidence(d,p,[m]);
+assert.equal(result.received,'5966');assert.equal(result.receivedDate,'2026-09-30');assert.equal(result.document.privateFile,true);
+assert.equal(result.verified,undefined);assert.equal(d.fundsConfirmed,undefined);
+assert.deepEqual(inboundTransferDefaults(d,{policy:'other'},[m]),{});
+assert.deepEqual(inboundTransferDefaults(d,p,[{...m,appliedAt:null}]),{});
+assert.deepEqual(inboundTransferDefaults(d,p,[{...m,pdf:null}]),{});
+assert.equal(transferDraftWithEvidence({...d,transfer:{received:'5900'}},p,[m]).received,'5900');
+assert.equal(JSON.stringify({d,p,m}),before);
+console.log('PASS evidence prefill, source matching, preserved input and no automatic verification');

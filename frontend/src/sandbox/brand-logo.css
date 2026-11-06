@@ -1,0 +1,3 @@
+.sb-brand-logo{display:block;position:relative;width:228px;height:54px;overflow:hidden;flex-shrink:0;direction:ltr}
+.sb-brand-logo img{position:absolute;width:120%;max-width:none;height:auto;left:-10%;top:50%;transform:translateY(-50%)}
+@media(max-width:760px){.sb-brand-logo{width:160px;height:40px}}

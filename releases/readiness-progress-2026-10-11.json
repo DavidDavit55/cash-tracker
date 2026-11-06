@@ -1,0 +1,49 @@
+{
+ "version":"1.0.0",
+ "date":"2026-10-11",
+ "status":"not-ready-for-production",
+ "productionReleaseAuthorized":false,
+ "productionWrites":0,
+ "deployments":0,
+ "ownerDecision":"Single owner admin only for 1.0.0",
+ "currentScope":{"decisionDate":"2026-10-11","requested":"Process tracking only; pause document and budget fixture work; preserve existing capabilities","documentCapabilities":"Retained, not removed; further document work deferred by user","deployment":"No live deployment authorized"},
+ "approvedRemoval":"Unused legacy WhatsApp QR budget bot only; Twilio retained",
+ "completedLocally":[
+  "Owner-scoped authenticated receipt downloads",
+  "Existing unfinished account registration requires its own valid session; public admin registration refused",
+  "Registration resume cannot change account identity fields",
+  "Phone verification is bound to the stored account phone",
+  "Retired legacy QR bot and removed its dependency chain; original source retained in pre-readiness snapshot",
+  "Production image uses explicit COPY and dockerignore allowlist; generic HTTP errors avoid stack disclosure",
+  "Compatible dependency patches plus sharp 0.35.5 and official SheetJS 0.20.3"
+ ],
+ "evidence":{
+  "stagingRecovery":{"snapshot":".staging-private/backups/2026-10-11T18-45-56-185Z","revision":930,"clients":2,"files":16,"offlineSqlRestoreAndByteVerification":"PASS","scope":"CRM state and referenced files; not complete DB or OAuth backup"},
+  "frontendAudit":"0 known vulnerabilities after update",
+  "backendProductionAudit":"0 known vulnerabilities including development dependencies after replacing nodemon with built-in Node watch",
+  "build":".release/readiness-20261011-patched; passed",
+  "artifactPatternScan":{"files":22,"findings":0,"limitation":"Not comprehensive secret/PII proof"},
+  "backendRegression":{"passed":35,"failed":1,"reason":"historical bank fixture absent; further fixture work deferred by user"},
+  "workflowAndFrontendRegression":{"passed":110,"failed":0,"scope":"Local automated tests, not production acceptance"},
+  "restoredWorkflowParity":{"result":"PASS","currentTasks":4,"scope":"Existing home and Tasks projections match before and after offline recovery of saved staging state; no Google requests"},
+  "liveReadOnlySmoke":{"frontend":200,"health":200,"anonymousAdmin":401,"anonymousStaging":401},
+  "sharpSmoke":"Image resize and PNG encoding passed",
+  "legacyWhatsAppRetirement":"PASS; QR source and dependencies removed locally; Twilio retained; production dependency audit clean",
+  "productionCrmCore":"Existing workflow frontend now connected to owner-only revision-checked state API behind an opt-in build flag; production remains disabled. Local browser persistence, conflict and navigation tests passed. External integrations are not connected in this adapter.",
+  "connectedTrackingReview":{"url":"http://127.0.0.1:4201/admin/crm","evidence":".release/crm-connected-review/ui-check.json","database":"Local persistent PGlite only; copy of staging revision 930; no remote writes","scope":"Existing workflows, saved tracking and internal calendar; budget sample explicitly labelled; no external messages, Google sync or new document integration"},
+  "productionSchemaRecoveryRehearsal":"PASS: 2 active clients, 19 archived clients, 16 files; existing archive ownership preserved; repeat import refused; no remote writes",
+  "knownPrivateValueScan":{"files":22,"referenceValues":63,"findings":0,"scope":"Existing local build compared with local backend environment and CRM backup; not complete privacy proof"}
+ },
+ "userInputsRemaining":[
+  "Production Google account consent and callback configuration must be completed manually once production integration is prepared"
+ ],
+ "engineeringRemaining":[
+  "Remove or replace remaining legacy demo-only actions before enabling the production CRM build flag; document work remains deferred",
+  "Full production DB and volume backup/restore; pg_dump and Docker not available locally",
+  "Container build/runtime acceptance, especially existing volume permissions under non-root user",
+  "Authenticated browser regression after latest security changes",
+  "Production mail/calendar/Tasks activation and recipient safeguards; staging config intentionally unchanged",
+  "Expand known-secret and PII review beyond supplied local references before any production release"
+ ],
+ "sources":{"sheetjs":"https://docs.sheetjs.com/docs/getting-started/installation/nodejs/"}
+}

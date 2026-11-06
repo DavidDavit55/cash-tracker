@@ -23,7 +23,7 @@ export default function AdminClients() {
       <div className="page-header"><h2>לקוחות</h2></div>
 
       {error && <div className="form-error">{error}</div>}
-      {!clients && !error && <div className="loading">טוען...</div>}
+      {!clients && !error && <div className="app-loading" role="status">טוען...</div>}
 
       {clients?.length === 0 && (
         <div className="empty-state">

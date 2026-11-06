@@ -1,0 +1,22 @@
+{
+  "releaseId": "production-2026-10-12-budget-export",
+  "status": "SUCCESS",
+  "liveAsset": "/assets/index-B8KiTJQn.js",
+  "liveVerification": "Railway SUCCESS; live bundle contains export feature and production API; backend health ok; authenticated browser downloaded PDF with 22 real transactions for 2026-10-01 through 2026-10-12",
+  "scope": "Budget PDF export and entry button only; four frontend files",
+  "authorization": "David explicitly authorized production PDF export without changing the rest of the system",
+  "projectId": "215a7137-0bd8-4986-a80f-a2de4c89f6c5",
+  "environmentId": "bc1bb91e-9e30-4cfb-b163-c772c6818601",
+  "serviceId": "ecaa359d-ebbc-499b-a4ce-7fe676970e23",
+  "deploymentId": "ce934e37-b794-4663-af28-20a8f3eda735",
+  "previousDeploymentId": "63f06544-4294-4f83-ab1e-6a34064c32f2",
+  "previousSource": ".release/production-budget-20261011-upload",
+  "previousPublicAssets": ".release/production-budget-export-20261012-before",
+  "candidate": ".release/production-budget-export-20261012-deploy",
+  "sourceChanges": ["frontend/src/components/BudgetExport.jsx", "frontend/src/components/BudgetImport.jsx", "frontend/src/lib/budgetExport.js", "frontend/src/pages/BudgetWorkspace.jsx"],
+  "tests": ["Isolated source comparison: exactly four files", "Production build passed with existing dependency tree", "Export assertions passed", "Four-page Hebrew PDF inspected in staging work", "Pattern scan and 63 known private reference values: no matches"],
+  "backendDeployed": false,
+  "databaseWrites": 0,
+  "crmDeployed": false,
+  "limitations": ["Raster PDF for printing, not searchable text", "Rollback not executed", "Not a full CRM production release"]
+}

@@ -1,0 +1,14 @@
+.wf-allocation-row { position: relative; }
+.wf-allocation-percent > span { padding-left: 115px; }
+.wf .wf-allocation-remove {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-height: 24px;
+  padding: 0 4px;
+  line-height: 24px;
+}
+@media (max-width: 560px) {
+  .wf-allocation-row { padding-top: 32px; }
+  .wf-allocation-percent > span { padding-left: 0; }
+}

@@ -1,0 +1,15 @@
+{
+  "environment": "staging",
+  "deployment": "221970f1-eca3-444f-b5ab-472b050bdef6",
+  "status": "SUCCESS",
+  "artifact": ".release/staging-tasks-fix-20261012",
+  "previousArtifact": ".release/staging-upsell-20261012",
+  "runtimeChange": "staging/tasks.mjs only: classify refresh errors without exposing upstream response bodies",
+  "verifiedCause": "Google refresh token rejected; live sync returned reauthorize",
+  "testsPassed": 12,
+  "liveVerification": "Blocked before Tasks API calls by invalid OAuth authorization. CRM compared before and after, unchanged.",
+  "remaining": "User must reconnect Google Tasks for daviddavit55@gmail.com. Then run staging/tasks-live-check.mjs to verify two export-only syncs; second run must create/update/complete zero tasks.",
+  "mappingsAndListPreserved": true,
+  "productionChanged": false,
+  "mailChanged": false
+}

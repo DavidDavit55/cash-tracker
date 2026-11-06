@@ -1,0 +1,19 @@
+{
+  "environment": "staging",
+  "status": "success-enabled",
+  "deploymentId": "9dc7924e-4488-46a8-9cb3-90244317ae21",
+  "previousDeploymentId": "b99e1081-1a01-4d8b-a805-75fec5413a4a",
+  "intermediateDeployments": ["1bc013e0-1a5b-44d4-a3dd-890fbe9abff7", "ef04dcde-b8c2-4e21-8e3c-62c430777055"],
+  "previousArtifact": ".release/staging-20261004-before-mail-automation-artifact",
+  "privateBackup": "2026-10-04T04-41-00-697Z",
+  "beforeRevision": 907,
+  "afterRevision": 908,
+  "crmChunk": "StagingCrm-RBeqJu7l.js",
+  "tests": {"automated": 20, "isolatedBrowserScenarios": 4},
+  "initialProcessing": {"messages": 60, "attachedRealAnnex": 1, "ignored": 51, "exceptions": 8, "ownerReportsSent": 3},
+  "supportedAutomaticActions": ["verified opening with unique destination", "real annex attachment", "explicit payroll update with salary month"],
+  "limitations": ["unsupported types remain exceptions", "no server OCR", "no external document links followed", "PDF auto archive limit 8MB"],
+  "productionChanged": false,
+  "customerOrEmployerEmailsSent": 0,
+  "documentHashVerified": true
+}

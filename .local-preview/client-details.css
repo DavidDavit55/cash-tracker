@@ -1,0 +1,7 @@
+.wf .wf-client-name{background:none;border:0;padding:0;color:var(--nw-green,#00573f);font:inherit;text-align:start;cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:6px}
+.wf .wf-client-identity{font-size:14px;color:#52615b;white-space:nowrap;margin-inline-start:14px}
+.wf-client-details{width:min(620px,calc(100vw - 32px))}
+.wf-client-details dl{display:grid;gap:0;margin:16px 0}
+.wf-client-details dl>div{display:grid;grid-template-columns:minmax(130px,1fr) 2fr;gap:12px;padding:14px 0;border-bottom:1px solid #e2e8e3}
+.wf-client-details dt{color:#52615b}.wf-client-details dd{margin:0;overflow-wrap:anywhere;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+@media(max-width:480px){.wf-client-details dl>div{grid-template-columns:1fr;gap:4px}}

@@ -1,0 +1,14 @@
+{
+  "environment": "staging",
+  "status": "success",
+  "deploymentId": "c5fcb1b5-26f3-4737-853c-ff980cafdb0b",
+  "previousDeploymentId": "59656229-4598-4eaa-8dc6-49c0c4fbaf1c",
+  "previousArtifact": ".release/staging-20261004-before-transfer-context",
+  "privateBackup": "2026-10-04T05-31-53-812Z",
+  "crmChunk": "StagingCrm-C4lLvIVW.js",
+  "verification": "live bundle hash and access controls passed; local build and four browser regressions passed before release",
+  "crmRevisionBefore": 914,
+  "crmRevisionAfter": 914,
+  "productionChanged": false,
+  "externalSends": 0
+}

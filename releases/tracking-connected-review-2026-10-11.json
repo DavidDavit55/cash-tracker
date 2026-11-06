@@ -1,0 +1,14 @@
+{
+ "version":"1.0.0-preparation",
+ "status":"local-review-ready-not-production-ready",
+ "productionReleaseAuthorized":false,
+ "deployments":0,
+ "remoteWrites":0,
+ "scope":"Connect existing workflow UI to persistent owner-scoped state, without recreating workflows or changing published budget",
+ "entry":"frontend/src/pages/OperationalCrm.jsx",
+ "activation":"VITE_OPERATIONAL_CRM=true plus server CRM_ENABLED=true and configured owner; neither changed remotely",
+ "review":{"url":"http://127.0.0.1:4201/admin/crm","launcher":"backend/crm-review-server.mjs","data":"Private local copy of staging revision 930, kept under excluded .release/crm-connected-review/database","authentication":"Local-only HttpOnly session; production uses existing JWT middleware and DB owner check","budget":"Existing layout retained with explicitly labelled temporary demonstration data, not live financial data","externalIntegrations":"Blocked, not simulated as successful delivery"},
+ "checks":{"workflowAndFrontend":110,"persistenceAndOwnerCore":6,"browser":"PASS: real local API writes survive reload, stale writer rejected, draft retained, task links, internal calendar, desktop/mobile, original copy restored","migrationParity":"PASS: 2 active and 19 archived clients, existing task projections unchanged","build":"PASS: .release/crm-connected-build-20261011; chunk size warnings remain"},
+ "remaining":["Review and replace remaining demo-only controls before production activation","Production Google mail/calendar/Tasks adapter and consent","Production DB and volume backup/restore verification","Container runtime and production-authenticated acceptance","Scoped release preserving already-published budget changes","Explicit owner approval before any live deployment"],
+ "startCommand":"node backend/crm-review-server.mjs .staging-private/backups/2026-10-11T18-45-56-185Z/crm.json"
+}

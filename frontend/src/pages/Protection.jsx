@@ -29,7 +29,7 @@ export default function Protection() {
   const isPreview = useIsPreviewRoute();
   const hasRealData = Boolean(pensionOverride) || Boolean(insuranceOverride) || Boolean(harBituachOverride);
 
-  if (maslakaLoading) return <div className="loading full">טוען...</div>;
+  if (maslakaLoading) return <div className="app-loading full" role="status">טוען...</div>;
   if (!hasRealData && !isPreview && !import.meta.env.DEV) {
     return <PendingDataScreen />;
   }
@@ -84,7 +84,7 @@ export default function Protection() {
                   borderBottom={i < items.length - 1}
                   warning={statusWarning(p).warning}
                   warningText={statusWarning(p).warningText}
-                  badge={p.pledgedTo ? 'משועבד' : null}
+                  badge={(p.isCollective || p.groupClassification) ? 'קולקטיב' : p.pledgedTo ? 'משועבד' : null}
                   details={
                     <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingRight: '18px', margin: 0, lineHeight: 1.8 }}>
                       {p.coverageItems.map((c, j) => <li key={j}>{c}</li>)}

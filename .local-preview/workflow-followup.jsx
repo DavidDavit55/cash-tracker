@@ -1,0 +1,32 @@
+import TypedDate from './typed-date.jsx';
+import CompletionMessage from './completion-message.jsx';
+import React,{useState} from 'react';
+import './workflow-process.css';
+import {taskList,productionChecksFor,actionKind,followupTaskDone,cancellationEvidence,cancellationReminder,israelDate} from './workflow-process.js';
+import Evidence from './workflow-evidence.jsx';
+import ProductionVerification from './production-verification.jsx';
+import AgentChanges from './workflow-agent-changes.jsx';
+export default function Followup({d,change,onTask,onClose,sendDelivery}){
+ const [error,setError]=useState(''),[sending,setSending]=useState(false);
+ async function deliver(){if(sending)return;setSending(true);setError('');try{const receipt=await sendDelivery();if(!receipt?.sent)throw Error('לא התקבל אישור שליחה');onTask('deliver',{delivery:receipt});}catch(e){setError(e.response?.data?.error||e.message);}finally{setSending(false);}}
+ function submit(e,key){e.preventDefault();try{onTask(key,{...Object.fromEntries(new FormData(e.currentTarget)),file:key==='cancelCheck'?cancellationEvidence(d):d.taskEvidence?.[key],...(key==='call'?{contacted:true}:{})});setError('');}catch(e){setError(e.message);}}
+ const financial=actionKind(d.action)==='transfer';
+ const documentLabel=financial?'מסמך הניוד שנבדק':'העתק הפוליסה שהופקה';
+ const localNow=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+ const list=taskList(d),done=list.filter(t=>followupTaskDone(d,t.key)).length;
+ return <section className="wf-panel wf-followup"><header className="wf-section-head"><div><small>הפקה נקלטה · הטיפול ממשיך</small><h2>משימות המשך</h2></div><span className="wf-pill">{done} מתוך {list.length} הושלמו</span></header><p>המוצר החדש מופיע בתיק. בשחלוף, הישן יישאר מסומן כממתין לביטול עד לווידוא הביטול בפועל.</p>{error&&<p className="wf-warning" role="alert">{error}</p>}
+ {list.filter(t=>!followupTaskDone(d,t.key)).slice(0,1).map((t,i)=><details className="wf-task-card" key={t.key} open={t.key===list.find(x=>!followupTaskDone(d,x.key))?.key}><summary><span className="wf-task-number">{followupTaskDone(d,t.key)?'✓':list.findIndex(x=>x.key===t.key)+1}</span><b>{t.title}</b><small>{t.due?'מועד בדיקה: '+t.due:followupTaskDone(d,t.key)?'הושלם':'לביצוע'}</small></summary>{followupTaskDone(d,t.key)?<p>{d.tasks?.[t.key]?.when||'תועד בדמו'} · {d.tasks?.[t.key]?.reference||''}</p>:<>
+ {t.key==='deliver'&&<div className="wf-kit"><p>מסירת {documentLabel} ללקוח — לא לחשבת השכר. סיכום הפגישה נשאר בתיק ואינו נשלח שוב בשלב זה.</p>{financial&&sendDelivery?<><p>הקובץ המצורף: {d.transfer?.document?.name||'חסר מסמך ניוד'}</p><p>בסטייגינג המייל נשלח רק אל davidsdreams55@gmail.com.</p><button disabled={sending||!d.transfer?.document?.data} onClick={deliver}>{sending?'שולח…':'שליחת מסמך הניוד למייל הבדיקה'}</button></>:<label className="wf-check"><TypedDate type="checkbox" checked={!!d.documentsVerified} onChange={e=>change({documents:[{id:'policy',name:documentLabel,done:e.target.checked}],documentsVerified:e.target.checked},'תיעוד מסירת מסמכי ביצוע')}/>מסרתי את מסמכי הביצוע ללקוח באופן ידני</label>}</div>}
+ {t.key==='verify'&&(['agent','change'].includes(actionKind(d.action))?<AgentChanges d={d} change={change}/>:<ProductionVerification d={d} change={change}/>)}
+ {!(t.key==='deliver'&&financial&&sendDelivery)&&<form onSubmit={e=>submit(e,t.key)}>
+ {t.key==='verify'&&(financial?<p>מסמך הניוד נשמר בשלב בדיקת הכספים: {d.transfer?.document?.name||'יש לבדוק במעקב הניוד'}. אין צורך בהעלאה חוזרת של נספח ו׳.</p>:<Evidence label="פוליסה חדשה שהופקה" file={d.policyDocument} onChange={file=>change({policyDocument:file},'נשמרה פוליסה חדשה בתיק המקומי')}/>)}
+ {t.key==='cancelCheck'&&<><p>החברה החדשה שולחת את בקשת הביטול. כאן מוודאים שהפוליסה הישנה בוטלה בפועל ושומרים את אישור הביטול פעם אחת.</p><Evidence label="אישור ביטול בכתב מהחברה" file={cancellationEvidence(d)} onChange={file=>change({taskEvidence:{...d.taskEvidence,cancelCheck:file}},'נשמר אישור ביטול בתיק')}/>{cancellationEvidence(d)&&<p className="wf-muted">האישור השמור ישמש לבדיקה — אין צורך להעלות אותו שוב.</p>}</>}
+ {t.key==='verify'&&<p>השלמת המשימה דורשת בדיקה אינטראקטיבית שמורה. אין אישור באמצעות סימון תיבות בלבד.</p>}
+ {t.key==='cancelCheck'&&<><label className="wf-field">פרטי אישור הביטול<TypedDate name="reference" required defaultValue={d.tasks?.cancel?.reference||''}/></label><label className="wf-field">תאריך בדיקת ביטול בפועל<TypedDate type="date" name="when" required max={israelDate()}/></label><label className="wf-check"><TypedDate type="checkbox" name="confirmed" required/>בדקתי שהפוליסה הישנה בוטלה בפועל ושהאישור בכתב מתייחס לביטול שבוצע, ולא רק לקבלת הבקשה</label><p className="wf-muted">14 ימי עסקים מתחילת הפוליסה החדשה הם תזכורת לבדיקה בלבד. אפשר לאשר ביטול שנבדק גם קודם. חישוב ימי העסקים בדמו אינו כולל חגים.</p>{cancellationReminder(d)?.urgent&&<p role="alert" className="wf-warning">נדרש בירור דחוף: ביטול הפוליסה הישנה טרם אומת. המשימה נשארת פתוחה עד לאישור.</p>}<button type="button" className="secondary" disabled={!!d.cancellationUrgent} onClick={()=>change({cancellationUrgent:true,cancellationUrgentAt:new Date().toISOString()},'דחוף להיום — הפוליסה הישנה עדיין פעילה')}>הפוליסה עדיין פעילה — סימון בירור דחוף</button></>}
+ {t.key==='call'&&!financial&&<CompletionMessage d={d} change={change}/>}
+ {t.key==='call'&&<label className="wf-field">{financial?'מתי התקיימה שיחת הטלפון?':'מתי עדכנת את הלקוח?'}<TypedDate type="datetime-local" name="when" required defaultValue={localNow} max={localNow}/></label>}
+ <button className="secondary" disabled={t.key==='cancelCheck'&&!followupTaskDone(d,'verify')}>{t.key==='call'?(financial?'שיחת הטלפון בוצעה — סיום המשימה':'הלקוח עודכן — סיום המשימה'):'שמירת תיעוד וסיום המשימה'}</button></form>}</>}</details>)}
+ {done>0&&<details><summary>✓ הושלמו {done} משימות — צפייה בתיעוד</summary>{list.filter(t=>followupTaskDone(d,t.key)).map(t=><p key={t.key}>{t.title} · {d.tasks?.[t.key]?.when||(d.tasks?.[t.key]?.at||d.agentAppointment?.verifiedAt)}</p>)}</details>}
+ {done<list.length?<p className="wf-muted">נותרו {list.length-done} משימות. לאחר השלמת השלב הפתוח יוצג השלב הבא.</p>:<p className="wf-success">כל משימות ההמשך הושלמו. אפשר לסיים את הטיפול במוצר הזה; מהלכים אחרים נשארים פתוחים.</p>}
+ <button onClick={()=>{if(done!==list.length){setError("לא ניתן לסיים. נותרו: "+list.filter(t=>!followupTaskDone(d,t.key)).map(t=>t.title).join("; "));return;}try{onClose();}catch(e){setError(e.message);}}}>סיום הטיפול במוצר</button></section>;
+}

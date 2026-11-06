@@ -1,0 +1,16 @@
+{
+  "environment": "staging",
+  "status": "success",
+  "deploymentId": "5c64567d-6fc5-4b88-b7eb-5e4882959685",
+  "failedUploadDeploymentId": "74cd85f1-0fc2-4f21-8c50-f97a4a0e4980",
+  "previousDeploymentId": "c5fcb1b5-26f3-4737-853c-ff980cafdb0b",
+  "previousArtifact": ".release/staging-20261004-before-allocation-verification",
+  "privateBackup": "2026-10-04T05-55-42-324Z",
+  "crmChunk": "StagingCrm-Cqwh9TdQ.js",
+  "automatedTestsPassed": 18,
+  "verification": "live bundle hash and access controls passed",
+  "crmRevisionBefore": 920,
+  "crmRevisionAfter": 920,
+  "productionChanged": false,
+  "externalSends": 0
+}
